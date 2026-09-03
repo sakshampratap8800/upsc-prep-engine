@@ -9,10 +9,9 @@ export interface ParsedPDF {
 }
 
 export async function parsePDF(filePath: string): Promise<ParsedPDF> {
-  const pdfParseMod = (await import('pdf-parse')) as any;
-  const pdfParseFunc = pdfParseMod.default || pdfParseMod;
+  const pdfParse = require('pdf-parse');
   const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdfParseFunc(dataBuffer);
+  const data = await pdfParse(dataBuffer);
   
   // Split by page breaks (form feed character)
   const pages = data.text.split('\f').filter((p: string) => p.trim().length > 0);
