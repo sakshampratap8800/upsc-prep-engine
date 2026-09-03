@@ -1,0 +1,295 @@
+// Prisma schema for UPSC CSE Preparation System
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/upsc.db"
+}
+
+model Subject {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  books Book[]
+
+  @@map("subjects")
+}
+
+model Book {
+  id            Int      @id @default(autoincrement())
+  title         String
+  className     Int
+  subjectId     Int
+  fileName      String
+  filePath      String
+  totalChapters Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  subject  Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+
+  @@index([subjectId])
+  @@map("books")
+}
+
+model Chapter {
+  id                   Int      @id @default(autoincrement())
+  number               Int
+  title                String
+  bookId               Int
+  content              String
+  summary              String?
+  keyConceptsJson      String?
+  definitionsJson      String?
+  findOutQuestionsJson String?
+  createdAt            DateTime @default(now())
+
+  // Relations
+  book          Book            @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  sections      Section[]
+  topics        SyllabusTopic[] @relation("ChapterTopic")
+  pyqs          PYQ[]           @relation("ChapterPYQ")
+  revisionItems RevisionItem[]  @relation("ChapterRevisionItem")
+
+  @@index([bookId])
+  @@map("chapters")
+}
+
+model Section {
+  id         Int      @id @default(autoincrement())
+  title      String
+  chapterId  Int
+  content    String
+  orderIndex Int
+  createdAt  DateTime @default(now())
+
+  // Relations
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+  @@map("sections")
+}
+
+model SyllabusTopic {
+  id          Int      @id @default(autoincrement())
+  name        String
+  paper       String
+  parentId    Int?
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Self-referencing relation for topic hierarchy / subtopics
+  parent   SyllabusTopic?  @relation("TopicHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children SyllabusTopic[] @relation("TopicHierarchy")
+
+  // Implicit many-to-many relations
+  chapters          Chapter[]          @relation("ChapterTopic")
+  concepts          Concept[]          @relation("TopicConcept")
+  pyqs              PYQ[]              @relation("PYQTopic")
+  practiceQuestions PracticeQuestion[] @relation("TopicPracticeQuestion")
+  currentAffairs    CurrentAffair[]    @relation("TopicCurrentAffair")
+  mapAssets         MapAsset[]         @relation("TopicMapAsset")
+  diagrams          Diagram[]          @relation("TopicDiagram")
+  revisionItems     RevisionItem[]     @relation("TopicRevisionItem")
+
+  @@index([parentId])
+  @@index([paper])
+  @@map("syllabus_topics")
+}
+
+model Concept {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  topics        SyllabusTopic[] @relation("TopicConcept")
+  pyqs          PYQ[]           @relation("PYQConcept")
+  revisionItems RevisionItem[]  @relation("ConceptRevisionItem")
+
+  @@index([name])
+  @@map("concepts")
+}
+
+model PYQ {
+  id             Int      @id @default(autoincrement())
+  year           Int
+  examStage      String
+  paper          String
+  questionNumber Int?
+  questionText   String
+  optionsJson    String?
+  correctAnswer  String?
+  explanation    String?
+  difficulty     String?
+  questionType   String?
+  directiveWord  String?
+  questionDemand String?
+  subjectArea    String?
+  sourceFile     String
+  sourcePage     Int?
+  confidence     Float    @default(1.0)
+  createdAt      DateTime @default(now())
+
+  // Relations
+  topics         SyllabusTopic[]  @relation("PYQTopic")
+  concepts       Concept[]        @relation("PYQConcept")
+  chapters       Chapter[]        @relation("ChapterPYQ")
+  answerAttempts AnswerAttempt[]
+
+  @@index([year])
+  @@index([examStage])
+  @@index([paper])
+  @@map("pyqs")
+}
+
+model PracticeQuestion {
+  id           Int      @id @default(autoincrement())
+  questionText String
+  answerText   String?
+  questionType String
+  sourceType   String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  topics         SyllabusTopic[] @relation("TopicPracticeQuestion")
+  answerAttempts AnswerAttempt[]
+
+  @@map("practice_questions")
+}
+
+model AnswerAttempt {
+  id                 Int      @id @default(autoincrement())
+  pyqId              Int?
+  practiceQuestionId Int?
+  userAnswer         String
+  score              Float?
+  feedback           String?
+  timeTakenSeconds   Int?
+  attemptedAt        DateTime @default(now())
+
+  // Relations
+  pyq              PYQ?              @relation(fields: [pyqId], references: [id], onDelete: SetNull)
+  practiceQuestion PracticeQuestion? @relation(fields: [practiceQuestionId], references: [id], onDelete: SetNull)
+  errorLogs        ErrorLog[]
+
+  @@index([pyqId])
+  @@index([practiceQuestionId])
+  @@map("answer_attempts")
+}
+
+model ErrorLog {
+  id              Int      @id @default(autoincrement())
+  answerAttemptId Int
+  errorType       String
+  description     String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  answerAttempt AnswerAttempt @relation(fields: [answerAttemptId], references: [id], onDelete: Cascade)
+
+  @@index([answerAttemptId])
+  @@index([errorType])
+  @@map("error_logs")
+}
+
+model RevisionItem {
+  id             Int       @id @default(autoincrement())
+  title          String
+  contentJson    String
+  priority       String    @default("medium")
+  nextReviewAt   DateTime?
+  lastReviewedAt DateTime?
+  reviewCount    Int       @default(0)
+  status         String    @default("pending")
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  topics   SyllabusTopic[] @relation("TopicRevisionItem")
+  concepts Concept[]       @relation("ConceptRevisionItem")
+  chapters Chapter[]       @relation("ChapterRevisionItem")
+
+  @@index([status])
+  @@index([nextReviewAt])
+  @@map("revision_items")
+}
+
+model StudyTask {
+  id             Int       @id @default(autoincrement())
+  title          String
+  description    String?
+  monthNumber    Int?
+  weekNumber     Int?
+  dayOfWeek      String?
+  timeAllocation String?
+  status         String    @default("not_started")
+  scheduledDate  DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("study_tasks")
+}
+
+model MapAsset {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  filePath    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  topics SyllabusTopic[] @relation("TopicMapAsset")
+
+  @@map("map_assets")
+}
+
+model Diagram {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  filePath    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  topics SyllabusTopic[] @relation("TopicDiagram")
+
+  @@map("diagrams")
+}
+
+model CurrentAffair {
+  id        Int       @id @default(autoincrement())
+  title     String
+  summary   String?
+  date      DateTime?
+  sourceUrl String?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  topics SyllabusTopic[] @relation("TopicCurrentAffair")
+
+  @@map("current_affairs")
+}
+
+model ImportLog {
+  id          Int      @id @default(autoincrement())
+  fileName    String
+  fileType    String
+  status      String
+  message     String?
+  processedAt DateTime @default(now())
+
+  @@index([status])
+  @@map("import_logs")
+}
