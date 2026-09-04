@@ -134,6 +134,18 @@ function extractQuestions(fullText: string, examStage: string, pages: string[]):
   }
 }
 
+function isGarbageText(text: string): boolean {
+  // If the text is heavily populated with random symbols, it's garbled Hindi
+  const alphaMatch = text.match(/[a-zA-Z]/g);
+  const alphaCount = alphaMatch ? alphaMatch.length : 0;
+  const symbolMatch = text.match(/[^a-zA-Z0-9\s\.\(\)\-]/g);
+  const symbolCount = symbolMatch ? symbolMatch.length : 0;
+  
+  if (alphaCount === 0) return true;
+  // If there are more weird symbols (like ~ @) than normal letters, it's garbled
+  return (symbolCount / alphaCount) > 0.5;
+}
+
 function extractPrelimsQuestions(text: string): ExtractedQuestion[] {
   const questions: ExtractedQuestion[] = [];
   
@@ -145,7 +157,10 @@ function extractPrelimsQuestions(text: string): ExtractedQuestion[] {
     const num = parseInt(match[1], 10);
     const block = match[2].trim();
     
-    if (num > 0 && num <= 150 && block.length > 20) {
+    // Only accept if it's actual English text (filters out garbled Hindi)
+    if (num > 0 && num <= 150 && block.length > 20 && !isGarbageText(block)) {
+      // Check if we already have this question number (to avoid duplicates from repeating pages)
+      if (questions.some(q => q.number === num)) continue;
       // Try to extract options
       const options: string[] = [];
       const optPattern = /\(([a-d])\)\s+([^\(\n]+)/gi;
@@ -190,7 +205,8 @@ function extractMainsQuestions(text: string): ExtractedQuestion[] {
       const num = parseInt(match[1], 10);
       const qText = match[2].trim().replace(/\s+/g, ' ');
       
-      if (num > 0 && num <= 30 && qText.length > 15) {
+      if (num > 0 && num <= 30 && qText.length > 15 && !isGarbageText(qText)) {
+        if (questions.some(q => q.number === num)) continue;
         questions.push({
           number: num,
           text: qText,
@@ -225,7 +241,8 @@ function extractEssayTopics(text: string): ExtractedQuestion[] {
   while ((match = pattern.exec(text)) !== null && questions.length < 10) {
     const num = parseInt(match[1], 10);
     const topic = match[2].trim();
-    if (num > 0 && num <= 10 && topic.length > 10) {
+    if (num > 0 && num <= 10 && topic.length > 10 && !isGarbageText(topic)) {
+      if (questions.some(q => q.number === num)) continue;
       questions.push({
         number: num,
         text: topic,
