@@ -225,10 +225,9 @@ function identifyPaper(fileName: string, examStage: string): string {
     return 'GS-I';
   }
   if (examStage === 'essay') return 'Essay';
-  if (examStage === 'anthropology' || examStage === 'sociology') {
-    const subject = examStage.charAt(0).toUpperCase() + examStage.slice(1);
-    if (/(?:paper[\s\-_]*ii|2\.pdf|_ii[_\.])/i.test(fn)) return `${subject} Paper-II`;
-    return `${subject} Paper-I`;
+  if (examStage === 'sociology') {
+    if (/(?:paper[\s\-_]*ii|2\.pdf|_ii[_\.])/i.test(fn)) return 'Sociology Paper-II';
+    return 'Sociology Paper-I';
   }
   return 'Unknown';
 }

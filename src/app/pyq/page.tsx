@@ -25,7 +25,7 @@ type YearStat = { year: number; _count: { id: number } };
 type StageStat = { examStage: string; _count: { id: number } };
 type YearStagePaperStat = { year: number; examStage: string; paper: string; _count: { id: number } };
 
-const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Anthropology', 'Sociology'];
+const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Sociology'];
 
 function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number }) {
   const params = new URLSearchParams();

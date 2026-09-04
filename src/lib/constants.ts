@@ -17,7 +17,6 @@ export const PYQ_DIRS = {
   prelims: path.join(PYQ_BASE, 'prelims'),
   mains: path.join(PYQ_BASE, 'mains'),
   essay: path.join(PYQ_BASE, 'essay'),
-  anthropology: path.join(PYQ_BASE, 'anthropology'),
   sociology: path.join(PYQ_BASE, 'sociology'),
 } as const;
 

@@ -42,7 +42,7 @@ export function getStatusColor(status: string): string {
   }
 }
 
-export const EXAM_STAGES = ['Prelims', 'Mains', 'Essay', 'Anthropology', 'Sociology'] as const;
+export const EXAM_STAGES = ['Prelims', 'Mains', 'Essay', 'Sociology'] as const;
 export const GS_PAPERS = ['GS-I', 'GS-II', 'GS-III', 'GS-IV'] as const;
 export const SUBJECTS = ['History', 'Geography', 'Economics', 'Politics'] as const;
 export const RELEVANCE_LEVELS = ['HIGH PRIORITY', 'IMPORTANT', 'MEDIUM', 'LOW PRIORITY'] as const;

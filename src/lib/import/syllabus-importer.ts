@@ -75,7 +75,6 @@ function extractSyllabusSections(text: string): SyllabusSection[] {
   return [
     ...extractPrelimsSections(text),
     ...extractMainSections(text),
-    ...extractOptionalSubjectSections(text, 'Anthropology', 'ANTHROPOLOGY', 'BOTANY'),
     ...extractOptionalSubjectSections(text, 'Sociology', 'SOCIOLOGY'),
   ].filter(section => section.subtopics.length > 0);
 }
