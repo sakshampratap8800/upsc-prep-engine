@@ -225,17 +225,20 @@ model RevisionItem {
 }
 
 model StudyTask {
-  id             Int       @id @default(autoincrement())
-  title          String
-  description    String?
-  monthNumber    Int?
-  weekNumber     Int?
-  dayOfWeek      String?
-  timeAllocation String?
-  status         String    @default("not_started")
-  scheduledDate  DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime  @default(now())
+  id               Int       @id @default(autoincrement())
+  title            String
+  description      String?
+  practiceRevision String?
+  websiteAction    String?
+  phase            String?
+  monthNumber      Int?
+  weekNumber       Int?
+  dayOfWeek        String?
+  timeAllocation   String?
+  status           String    @default("not_started")
+  scheduledDate    DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([status])
   @@index([scheduledDate])

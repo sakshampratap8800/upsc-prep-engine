@@ -9,6 +9,8 @@ export const SUBJECT_DIRS = {
   geography: path.join(BOOKS_BASE_PATH, 'geography'),
   economics: path.join(BOOKS_BASE_PATH, 'economics'),
   politics: path.join(BOOKS_BASE_PATH, 'politics'),
+  science: path.join(BOOKS_BASE_PATH, 'science'),
+  sociology: path.join(BOOKS_BASE_PATH, 'sociology'),
 } as const;
 
 // PYQ directories
@@ -58,6 +60,14 @@ export const NCERT_BOOKS: Array<{
   { subject: 'Politics', className: 10, title: 'Democratic Politics-II', fileName: 'Class-10-Democratic-Politics.pdf' },
   { subject: 'Politics', className: 11, title: 'Indian Constitution at Work', fileName: 'Class-11-Indian-Constitution-at-work.pdf' },
   { subject: 'Politics', className: 12, title: 'Politics in India since Independence', fileName: 'Class-12-Politics-since-Independence.pdf' },
+  // Science
+  { subject: 'Science', className: 9, title: 'Science Class 9', fileName: 'class-9-science.pdf' },
+  { subject: 'Science', className: 10, title: 'Science Class 10', fileName: 'Class-10-Science.pdf' },
+  // Sociology NCERTs
+  { subject: 'Sociology', className: 11, title: 'Introducing Sociology', fileName: 'class-11-INTRODUCING SOCIOLOGY.pdf' },
+  { subject: 'Sociology', className: 11, title: 'Understanding Society', fileName: 'class-11-UNDERSTANDING SOCIETY.pdf' },
+  { subject: 'Sociology', className: 12, title: 'Indian Society', fileName: 'class-12-Indian Society.pdf' },
+  { subject: 'Sociology', className: 12, title: 'Social Change and Development in India', fileName: 'class-12-Social Change and Development.pdf' },
 ];
 
 // PYQ file name patterns for identification

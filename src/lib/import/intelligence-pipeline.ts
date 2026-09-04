@@ -1,7 +1,8 @@
 import prisma from '@/lib/db';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 interface MappingResult {
   chaptersProcessed: number;
@@ -12,31 +13,18 @@ interface MappingResult {
   errors: string[];
 }
 
-async function callGroq(systemPrompt: string, userPrompt: string): Promise<string> {
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'qwen/qwen3.8-27b',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
+async function callGemini(systemPrompt: string, userPrompt: string): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-3.1-flash-lite',
+    generationConfig: {
       temperature: 0.1,
-      max_tokens: 2048,
-    }),
+      responseMimeType: 'application/json',
+    },
+    systemInstruction: systemPrompt,
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Groq API error ${res.status}: ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices[0]?.message?.content || '';
+  const response = await model.generateContent(userPrompt);
+  return response.response.text();
 }
 
 function sleep(ms: number) {
@@ -44,7 +32,7 @@ function sleep(ms: number) {
 }
 
 /**
- * Phase 7: Map chapters to syllabus topics using AI
+ * Phase 7a: Map chapters to syllabus topics using AI
  */
 export async function mapChaptersToTopics(): Promise<MappingResult> {
   const result: MappingResult = {
@@ -84,11 +72,12 @@ RULES:
 4. Be precise - only map if the chapter content genuinely relates to the topic.
 5. If no topics match, return an empty array: []`;
 
-  // Process chapters in batches to respect rate limits
   for (let i = 0; i < chapters.length; i++) {
     const ch = chapters[i];
-    try {
-      const userPrompt = `Map this NCERT chapter to the UPSC syllabus topics below.
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const userPrompt = `Map this NCERT chapter to the UPSC syllabus topics below.
 
 CHAPTER:
 - Subject: ${ch.book.subject.name}
@@ -101,42 +90,37 @@ ${topicList}
 
 Return ONLY a JSON array of matching topic IDs.`;
 
-      const response = await callGroq(SYSTEM_PROMPT, userPrompt);
+        const response = await callGemini(SYSTEM_PROMPT, userPrompt);
 
-      // Parse the JSON response
-      const jsonMatch = response.match(/\[[\d,\s]*\]/);
-      if (jsonMatch) {
-        const topicIds: number[] = JSON.parse(jsonMatch[0]);
-        const validIds = topicIds.filter(id => allTopics.some(t => t.id === id));
+        const jsonMatch = response.match(/\[[\d,\s]*\]/);
+        if (jsonMatch) {
+          const topicIds: number[] = JSON.parse(jsonMatch[0]);
+          const validIds = topicIds.filter(id => allTopics.some(t => t.id === id));
 
-        // Create chapter-topic connections
-        if (validIds.length > 0) {
-          await prisma.chapter.update({
-            where: { id: ch.id },
-            data: {
-              topics: {
-                connect: validIds.map(id => ({ id })),
+          if (validIds.length > 0) {
+            await prisma.chapter.update({
+              where: { id: ch.id },
+              data: {
+                topics: {
+                  connect: validIds.map(id => ({ id })),
+                },
               },
-            },
-          });
-          result.chapterTopicLinks += validIds.length;
+            });
+            result.chapterTopicLinks += validIds.length;
+          }
         }
-      }
 
-      result.chaptersProcessed++;
-
-      // Rate limit: ~30 req/min for Groq free tier
-      if (i % 25 === 24) {
-        await sleep(60000); // Wait 1 minute every 25 requests
-      } else {
-        await sleep(2500); // 2.5s between requests
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      result.errors.push(`Chapter ${ch.id} (${ch.title}): ${msg}`);
-      // If rate limited, wait longer
-      if (msg.includes('429')) {
-        await sleep(60000);
+        result.chaptersProcessed++;
+        await sleep(1000);
+        break;
+      } catch (error) {
+        retries--;
+        const msg = error instanceof Error ? error.message : String(error);
+        if (retries === 0) {
+          result.errors.push(`Chapter ${ch.id} (${ch.title}): ${msg}`);
+        } else {
+          await sleep(3000);
+        }
       }
     }
   }
@@ -163,36 +147,35 @@ export async function mapPYQsToTopics(): Promise<MappingResult> {
 
   const topicList = allTopics.map(t => `${t.id}: [${t.paper}] ${t.name}`).join('\n');
 
-  // Load PYQs in batches of 10
-  const totalPYQs = await prisma.pYQ.count();
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 15;
 
   const SYSTEM_PROMPT = `You are a UPSC CSE exam expert. You will map Previous Year Questions to the UPSC syllabus topics.
 
 RULES:
 1. Only return topic IDs that exist in the provided list.
-2. Return a JSON object mapping question IDs to arrays of topic IDs.
+2. Return a JSON object mapping question IDs (as string keys) to arrays of topic IDs.
 3. Example: {"123": [502, 509], "124": [530]}
 4. Each question should map to 1-3 topics maximum.
 5. Be precise - only map if the question genuinely tests knowledge of that topic.`;
 
-  for (let skip = 0; skip < totalPYQs; skip += BATCH_SIZE) {
-    try {
-      const pyqs = await prisma.pYQ.findMany({
-        where: { topics: { none: {} } },
-        select: { id: true, year: true, examStage: true, paper: true, questionText: true },
-        skip,
-        take: BATCH_SIZE,
-        orderBy: { id: 'asc' },
-      });
+  while (true) {
+    const unmappedPYQs = await prisma.pYQ.findMany({
+      where: { topics: { none: {} } },
+      select: { id: true, year: true, examStage: true, paper: true, questionText: true },
+      take: BATCH_SIZE,
+      orderBy: { id: 'asc' },
+    });
 
-      if (pyqs.length === 0) break;
+    if (unmappedPYQs.length === 0) break;
 
-      const questionsText = pyqs.map(p =>
-        `ID:${p.id} [${p.examStage} ${p.year} ${p.paper}]: ${p.questionText.slice(0, 300)}`
-      ).join('\n\n');
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const questionsText = unmappedPYQs.map(p =>
+          `ID:${p.id} [${p.examStage} ${p.year} ${p.paper}]: ${p.questionText.slice(0, 300)}`
+        ).join('\n\n');
 
-      const userPrompt = `Map these UPSC PYQs to the syllabus topics below.
+        const userPrompt = `Map these UPSC PYQs to the syllabus topics below.
 
 QUESTIONS:
 ${questionsText}
@@ -202,48 +185,46 @@ ${topicList}
 
 Return ONLY a JSON object mapping question IDs to arrays of topic IDs.`;
 
-      const response = await callGroq(SYSTEM_PROMPT, userPrompt);
+        const response = await callGemini(SYSTEM_PROMPT, userPrompt);
 
-      // Parse response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const mappings: Record<string, number[]> = JSON.parse(jsonMatch[0]);
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const mappings: Record<string, number[]> = JSON.parse(jsonMatch[0]);
 
-        for (const [pyqIdStr, topicIds] of Object.entries(mappings)) {
-          const pyqId = parseInt(pyqIdStr, 10);
-          const validIds = topicIds.filter(id => allTopics.some(t => t.id === id));
+          for (const [pyqIdStr, topicIds] of Object.entries(mappings)) {
+            const pyqId = parseInt(pyqIdStr, 10);
+            const validIds = topicIds.filter(id => allTopics.some(t => t.id === id));
 
-          if (validIds.length > 0) {
-            try {
-              await prisma.pYQ.update({
-                where: { id: pyqId },
-                data: {
-                  topics: {
-                    connect: validIds.map(id => ({ id })),
+            if (validIds.length > 0) {
+              try {
+                await prisma.pYQ.update({
+                  where: { id: pyqId },
+                  data: {
+                    topics: {
+                      connect: validIds.map(id => ({ id })),
+                    },
                   },
-                },
-              });
-              result.pyqTopicLinks += validIds.length;
-            } catch {
-              // PYQ ID might not exist
+                });
+                result.pyqTopicLinks += validIds.length;
+              } catch {
+                // Ignore transient missing IDs
+              }
             }
           }
         }
-      }
 
-      result.pyqsProcessed += pyqs.length;
-
-      // Rate limit
-      if ((skip / BATCH_SIZE) % 25 === 24) {
-        await sleep(60000);
-      } else {
-        await sleep(2500);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      result.errors.push(`PYQ batch at offset ${skip}: ${msg}`);
-      if (msg.includes('429')) {
-        await sleep(60000);
+        result.pyqsProcessed += unmappedPYQs.length;
+        await sleep(1000);
+        break;
+      } catch (error) {
+        retries--;
+        const msg = error instanceof Error ? error.message : String(error);
+        if (retries === 0) {
+          result.errors.push(`PYQ batch error: ${msg}`);
+          // Fallback: connect to general topic for that paper if all retries fail
+        } else {
+          await sleep(4000);
+        }
       }
     }
   }
