@@ -14,6 +14,7 @@ import {
   AlertCircle,
   GitCompare,
   Database,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Compare Optionals', href: '/compare', icon: GitCompare },
   { label: 'Search', href: '/search', icon: Search },
   { label: 'Import Data', href: '/import', icon: Database },
+  { label: 'Data Health', href: '/data-health', icon: Activity },
 ];
 
 export function Sidebar() {
