@@ -29,18 +29,30 @@ export async function importTimetable(): Promise<TimetableImportResult> {
     const tasks = parseTimetable(text);
 
     for (const task of tasks) {
-      await prisma.studyTask.create({
-        data: {
+      // Deduplicate by looking for logically identical tasks
+      const existing = await prisma.studyTask.findFirst({
+        where: {
           title: task.title,
-          description: task.description || null,
           monthNumber: task.month || null,
           weekNumber: task.week || null,
           dayOfWeek: task.day || null,
-          timeAllocation: task.time || null,
-          status: 'not_started',
-        },
+        }
       });
-      result.tasksImported++;
+
+      if (!existing) {
+        await prisma.studyTask.create({
+          data: {
+            title: task.title,
+            description: task.description || null,
+            monthNumber: task.month || null,
+            weekNumber: task.week || null,
+            dayOfWeek: task.day || null,
+            timeAllocation: task.time || null,
+            status: 'not_started',
+          },
+        });
+        result.tasksImported++;
+      }
     }
 
     await prisma.importLog.create({

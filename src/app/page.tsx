@@ -1,6 +1,7 @@
 import { BookOpen, FileQuestion, GraduationCap, ClipboardList, RotateCcw, Calendar } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { PageHeader } from '@/components/PageHeader';
+import { getBookCount, getChapterCount, getPyqCount, getSyllabusTopicCount, getDueRevisionCount, getPendingTaskCount } from '@/lib/queries';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 
@@ -11,12 +12,12 @@ export default async function DashboardPage() {
 
   try {
     const [bookCount, chapterCount, pyqCount, topicCount, revisionCount, taskCount] = await Promise.all([
-      prisma.book.count(),
-      prisma.chapter.count(),
-      prisma.pYQ.count(),
-      prisma.syllabusTopic.count(),
-      prisma.revisionItem.count({ where: { status: 'pending' } }),
-      prisma.studyTask.count({ where: { status: 'not_started' } }),
+      getBookCount(),
+      getChapterCount(),
+      getPyqCount(),
+      getSyllabusTopicCount(),
+      getDueRevisionCount(),
+      getPendingTaskCount(),
     ]);
     stats = { books: bookCount, chapters: chapterCount, pyqs: pyqCount, syllabusTopics: topicCount, revisionsDue: revisionCount, pendingTasks: taskCount };
 

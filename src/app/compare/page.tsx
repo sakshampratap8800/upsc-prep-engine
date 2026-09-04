@@ -1,28 +1,21 @@
 import { PageHeader } from '@/components/PageHeader';
-import prisma from '@/lib/db';
+import { getOptionalStats } from '@/lib/queries';
 import { GitCompare } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import Link from 'next/link';
 
 export default async function ComparePage() {
-  let anthroCount = 0;
-  let socioCount = 0;
-  let anthroYears: number[] = [];
-  let socioYears: number[] = [];
+  let anthro = { totalCount: 0, yearsAvailable: 0, yearRange: 'N/A' };
+  let socio = { totalCount: 0, yearsAvailable: 0, yearRange: 'N/A' };
 
   try {
-    anthroCount = await prisma.pYQ.count({ where: { examStage: 'Anthropology' } });
-    socioCount = await prisma.pYQ.count({ where: { examStage: 'Sociology' } });
-
-    const anthroYearData = await prisma.pYQ.groupBy({ by: ['year'], where: { examStage: 'Anthropology' }, orderBy: { year: 'asc' } });
-    anthroYears = anthroYearData.map(y => y.year);
-    const socioYearData = await prisma.pYQ.groupBy({ by: ['year'], where: { examStage: 'Sociology' }, orderBy: { year: 'asc' } });
-    socioYears = socioYearData.map(y => y.year);
+    anthro = await getOptionalStats('Anthropology');
+    socio = await getOptionalStats('Sociology');
   } catch {
     // DB not ready
   }
 
-  const hasData = anthroCount > 0 || socioCount > 0;
+  const hasData = anthro.totalCount > 0 || socio.totalCount > 0;
 
   return (
     <div>
@@ -50,16 +43,16 @@ export default async function ComparePage() {
             <div className="mt-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Total PYQs</span>
-                <span className="font-semibold text-stone-900">{anthroCount}</span>
+                <span className="font-semibold text-stone-900">{anthro.totalCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Years Available</span>
-                <span className="font-semibold text-stone-900">{anthroYears.length}</span>
+                <span className="font-semibold text-stone-900">{anthro.yearsAvailable}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Year Range</span>
                 <span className="font-semibold text-stone-900">
-                  {anthroYears.length > 0 ? `${anthroYears[0]}\u2013${anthroYears[anthroYears.length - 1]}` : 'N/A'}
+                  {anthro.yearRange}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -78,16 +71,16 @@ export default async function ComparePage() {
             <div className="mt-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Total PYQs</span>
-                <span className="font-semibold text-stone-900">{socioCount}</span>
+                <span className="font-semibold text-stone-900">{socio.totalCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Years Available</span>
-                <span className="font-semibold text-stone-900">{socioYears.length}</span>
+                <span className="font-semibold text-stone-900">{socio.yearsAvailable}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-stone-500">Year Range</span>
                 <span className="font-semibold text-stone-900">
-                  {socioYears.length > 0 ? `${socioYears[0]}\u2013${socioYears[socioYears.length - 1]}` : 'N/A'}
+                  {socio.yearRange}
                 </span>
               </div>
               <div className="flex justify-between text-sm">

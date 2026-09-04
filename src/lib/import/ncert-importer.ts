@@ -1,6 +1,6 @@
 import { parsePDF } from './pdf-parser';
 import prisma from '@/lib/db';
-import { NCERT_BOOKS, SUBJECT_DIRS } from '@/lib/constants';
+import { NCERT_BOOKS, SUBJECT_DIRS, BOOKS_BASE_PATH } from '@/lib/constants';
 import path from 'path';
 import fs from 'fs';
 
@@ -14,95 +14,113 @@ export interface ImportResult {
 export async function importNCERTs(): Promise<ImportResult> {
   const result: ImportResult = { success: true, booksImported: 0, chaptersExtracted: 0, errors: [] };
 
-  for (const bookMeta of NCERT_BOOKS) {
+  const ignoredDirs = ['PYQ', 'syllabus', 'timetable', 'upsc-app'];
+  const baseDirs = fs.readdirSync(BOOKS_BASE_PATH, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !ignoredDirs.includes(d.name));
+
+  for (const dir of baseDirs) {
+    const subjectName = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+    const subjectDirPath = path.join(BOOKS_BASE_PATH, dir.name);
+    
+    let pdfFiles = [];
     try {
-      const subjectDir = SUBJECT_DIRS[bookMeta.subject.toLowerCase() as keyof typeof SUBJECT_DIRS];
-      const filePath = path.join(subjectDir, bookMeta.fileName);
+      pdfFiles = fs.readdirSync(subjectDirPath).filter(f => f.toLowerCase().endsWith('.pdf'));
+    } catch (e) {
+      continue;
+    }
 
-      if (!fs.existsSync(filePath)) {
-        result.errors.push(`File not found: ${filePath}`);
-        continue;
-      }
+    for (const fileName of pdfFiles) {
+      try {
+        const filePath = path.join(subjectDirPath, fileName);
 
-      // Create or find subject
-      const subject = await prisma.subject.upsert({
-        where: { slug: bookMeta.subject.toLowerCase() },
-        update: {},
-        create: {
-          name: bookMeta.subject,
-          slug: bookMeta.subject.toLowerCase(),
-          description: `NCERT ${bookMeta.subject} textbooks`,
-        },
-      });
+        // Deduplication using fileName as stable identifier
+        const existingBook = await prisma.book.findFirst({
+          where: { fileName: fileName },
+        });
+        if (existingBook) {
+          continue;
+        }
 
-      // Check if book already imported
-      const existingBook = await prisma.book.findFirst({
-        where: { fileName: bookMeta.fileName },
-      });
-      if (existingBook) {
-        result.errors.push(`Already imported: ${bookMeta.fileName}`);
-        continue;
-      }
-
-      // Parse PDF
-      const parsed = await parsePDF(filePath);
-
-      // Extract chapters
-      const chapters = extractChapters(parsed.text, parsed.pages);
-
-      // Create book
-      const book = await prisma.book.create({
-        data: {
-          title: bookMeta.title,
-          className: bookMeta.className,
-          subjectId: subject.id,
-          fileName: bookMeta.fileName,
-          filePath: filePath,
-          totalChapters: chapters.length,
-        },
-      });
-
-      // Create chapters
-      for (const ch of chapters) {
-        await prisma.chapter.create({
-          data: {
-            number: ch.number,
-            title: ch.title,
-            bookId: book.id,
-            content: ch.content,
-            summary: ch.content.slice(0, 500),
-            keyConceptsJson: JSON.stringify(extractKeyConcepts(ch.content)),
-            definitionsJson: JSON.stringify(extractDefinitions(ch.content)),
-            findOutQuestionsJson: JSON.stringify(extractFindOutQuestions(ch.content)),
+        // Create or find subject
+        const subject = await prisma.subject.upsert({
+          where: { slug: subjectName.toLowerCase() },
+          update: {},
+          create: {
+            name: subjectName,
+            slug: subjectName.toLowerCase(),
+            description: `NCERT ${subjectName} textbooks`,
           },
         });
-        result.chaptersExtracted++;
+
+        // Parse Class Name from filename (e.g. "Class-12-Macroeconomics.pdf")
+        let className = 0;
+        const classMatch = fileName.match(/Class[_\-\s]?(\d+)|([IXV]+)/i);
+        if (classMatch) {
+          className = classMatch[1] ? parseInt(classMatch[1], 10) : 0;
+        }
+
+        // Parse title from filename
+        let title = fileName.replace('.pdf', '').replace(/[-_]/g, ' ');
+
+        // Parse PDF
+        const parsed = await parsePDF(filePath);
+
+        // Extract chapters
+        const chapters = extractChapters(parsed.text, parsed.pages);
+
+        // Create book
+        const book = await prisma.book.create({
+          data: {
+            title: title,
+            className: className,
+            subjectId: subject.id,
+            fileName: fileName,
+            filePath: filePath,
+            totalChapters: chapters.length,
+          },
+        });
+
+        // Create chapters
+        for (const ch of chapters) {
+          await prisma.chapter.create({
+            data: {
+              number: ch.number,
+              title: ch.title,
+              bookId: book.id,
+              content: ch.content,
+              summary: ch.content.slice(0, 500),
+              keyConceptsJson: JSON.stringify(extractKeyConcepts(ch.content)),
+              definitionsJson: JSON.stringify(extractDefinitions(ch.content)),
+              findOutQuestionsJson: JSON.stringify(extractFindOutQuestions(ch.content)),
+            },
+          });
+          result.chaptersExtracted++;
+        }
+
+        result.booksImported++;
+
+        await prisma.importLog.create({
+          data: {
+            fileName: fileName,
+            fileType: 'ncert',
+            status: 'success',
+            message: `Imported ${chapters.length} chapters`,
+          },
+        });
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        result.errors.push(`Error importing ${fileName}: ${errMsg}`);
+        result.success = false;
+
+        await prisma.importLog.create({
+          data: {
+            fileName: fileName,
+            fileType: 'ncert',
+            status: 'error',
+            message: errMsg,
+          },
+        });
       }
-
-      result.booksImported++;
-
-      // Log import
-      await prisma.importLog.create({
-        data: {
-          fileName: bookMeta.fileName,
-          fileType: 'ncert',
-          status: 'success',
-          message: `Imported ${chapters.length} chapters`,
-        },
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      result.errors.push(`Error importing ${bookMeta.fileName}: ${errMsg}`);
-      result.success = false;
-
-      await prisma.importLog.create({
-        data: {
-          fileName: bookMeta.fileName,
-          fileType: 'ncert',
-          status: 'error',
-          message: errMsg,
-        },
-      });
     }
   }
 
@@ -144,9 +162,25 @@ function extractChapters(fullText: string, pages: string[]): ExtractedChapter[] 
         num = parseInt(raw, 10);
       }
       if (!isNaN(num) && num > 0 && num <= 50) {
+        let rawTitle = match[2].trim().replace(/\s+/g, ' ');
+        
+        // 1. Fix duplicated string issue (e.g. "WHAT IS DEMOCRACYWHAT IS DEMOCRACY")
+        const half = Math.floor(rawTitle.length / 2);
+        if (rawTitle.length > 10 && rawTitle.slice(0, half).trim() === rawTitle.slice(half).trim()) {
+          rawTitle = rawTitle.slice(0, half).trim();
+        }
+        
+        // 2. Validate title quality
+        if (rawTitle.length < 3 || rawTitle.length > 150) continue;
+        const alphaMatch = rawTitle.match(/[a-zA-Z]/g);
+        if (!alphaMatch || alphaMatch.length < rawTitle.length * 0.4) continue;
+        
+        // 3. Remove weird header trailing artifacts like page numbers
+        rawTitle = rawTitle.replace(/[\d\.\-\_]+$/, '').trim();
+
         matches.push({
           number: num,
-          title: match[2].trim().replace(/\s+/g, ' '),
+          title: rawTitle,
           index: match.index,
         });
       }

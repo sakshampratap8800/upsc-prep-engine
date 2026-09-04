@@ -19,6 +19,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
 
   let pyqs: Array<{ id: number; year: number; examStage: string; paper: string; questionNumber: number | null; questionText: string; subjectArea: string | null; difficulty: string | null }> = [];
   let totalCount = 0;
+  let totalCountRaw = 0;
   let yearStats: Array<{ year: number; _count: { id: number } }> = [];
   let stageStats: Array<{ examStage: string; _count: { id: number } }> = [];
 
@@ -38,11 +39,18 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
       prisma.pYQ.count({ where }),
     ]);
 
-    // Get filter options
-    const rawYearStats = await prisma.pYQ.groupBy({ by: ['year'], _count: { id: true }, orderBy: { year: 'desc' } });
+    // Get filter options. For stage stats, we filter by year if selected. For year stats, we filter by stage if selected.
+    const yearWhere = stage ? { examStage: stage } : {};
+    const stageWhere = year ? { year: year } : {};
+
+    const rawYearStats = await prisma.pYQ.groupBy({ by: ['year'], _count: { id: true }, where: yearWhere, orderBy: { year: 'desc' } });
     yearStats = rawYearStats;
-    const rawStageStats = await prisma.pYQ.groupBy({ by: ['examStage'], _count: { id: true } });
+    const rawStageStats = await prisma.pYQ.groupBy({ by: ['examStage'], _count: { id: true }, where: stageWhere });
     stageStats = rawStageStats;
+    
+    // Total unfiltered count for the "All" button
+    const rawTotalCount = await prisma.pYQ.count();
+    totalCountRaw = rawTotalCount;
   } catch {
     // DB not ready
   }
@@ -53,10 +61,10 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
     <div>
       <PageHeader
         title="PYQ Browser"
-        description={`${totalCount} Previous Year Questions • 2016–2026 • Prelims, Mains, Essay, Optionals`}
+        description={`${totalCountRaw} Previous Year Questions • 2016–2026 • Prelims, Mains, Essay, Optionals`}
       />
 
-      {totalCount === 0 ? (
+      {totalCountRaw === 0 ? (
         <EmptyState
           icon={FileQuestion}
           title="No PYQs imported yet"
@@ -75,8 +83,8 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
               <h3 className="text-sm font-bold text-stone-900">Exam Stage</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href="/pyq" className={`block rounded-lg px-3 py-1.5 text-sm ${!stage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
-                    All ({totalCount})
+                  <Link href={`/pyq${year ? `?year=${year}` : ''}`} className={`block rounded-lg px-3 py-1.5 text-sm ${!stage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                    All Stages
                   </Link>
                 </li>
                 {stageStats.map((s) => (
@@ -90,6 +98,11 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
 
               <h3 className="mt-6 text-sm font-bold text-stone-900">Year</h3>
               <ul className="mt-2 space-y-1">
+                <li>
+                  <Link href={`/pyq${stage ? `?stage=${stage}` : ''}`} className={`block rounded-lg px-3 py-1.5 text-sm ${!year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                    All Years
+                  </Link>
+                </li>
                 {yearStats.map((y) => (
                   <li key={y.year}>
                     <Link href={`/pyq?${stage ? `stage=${stage}&` : ''}year=${y.year}`} className={`block rounded-lg px-3 py-1.5 text-sm ${year === y.year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
