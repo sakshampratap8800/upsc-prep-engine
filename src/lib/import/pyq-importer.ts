@@ -203,8 +203,20 @@ function extractMainsQuestions(text: string): ExtractedQuestion[] {
     let match;
     while ((match = pattern.exec(text)) !== null && questions.length < 30) {
       const num = parseInt(match[1], 10);
-      const qText = match[2].trim().replace(/\s+/g, ' ');
+      let qText = match[2].trim().replace(/\s+/g, ' ');
       
+      // Attempt to isolate the English part from the mixed Hindi/English block
+      // Example structure: [Hindi Text] (~ 150 ~ # ~) [English Text] (Answer in 150 words) 10
+      // We want everything from the last closing parenthesis of the Hindi marks, up to the English marks
+      const englishMarksIdx = qText.indexOf('(Answer in');
+      if (englishMarksIdx !== -1) {
+        let hindiMarksEndIdx = qText.lastIndexOf(')', englishMarksIdx - 1);
+        if (hindiMarksEndIdx === -1) hindiMarksEndIdx = 0;
+        else hindiMarksEndIdx += 1;
+        
+        qText = qText.substring(hindiMarksEndIdx, englishMarksIdx).trim();
+      }
+
       if (num > 0 && num <= 30 && qText.length > 15 && !isGarbageText(qText)) {
         if (questions.some(q => q.number === num)) continue;
         questions.push({

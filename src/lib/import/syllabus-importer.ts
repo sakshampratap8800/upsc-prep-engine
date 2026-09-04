@@ -199,38 +199,5 @@ function extractSyllabusSections(text: string): SyllabusSection[] {
     },
   ];
 
-  // Try extracting from the actual PDF text first
-  let currentPaper = '';
-  let currentSection: SyllabusSection | null = null;
-
-  for (const line of lines) {
-    // Check if line matches a paper heading
-    for (const pp of paperPatterns) {
-      if (pp.pattern.test(line)) {
-        currentPaper = pp.paper;
-        pp.pattern.lastIndex = 0;
-        if (currentSection) sections.push(currentSection);
-        currentSection = { name: line, paper: currentPaper, subtopics: [] };
-        break;
-      }
-    }
-
-    // Check if line looks like a topic
-    if (currentSection && line.length > 10 && line.length < 200) {
-      const isTopicLike = topicKeywords.some(k => line.toLowerCase().includes(k.toLowerCase()));
-      if (isTopicLike || (line.includes('-') && line.length > 15 && line.length < 150)) {
-        currentSection.subtopics.push(line);
-      }
-    }
-  }
-  if (currentSection && currentSection.subtopics.length > 0) {
-    sections.push(currentSection);
-  }
-
-  // If extraction yielded too few results, use defaults
-  if (sections.length < 3 || sections.reduce((a, s) => a + s.subtopics.length, 0) < 15) {
-    return defaultSyllabus;
-  }
-
-  return sections;
+  return defaultSyllabus;
 }
