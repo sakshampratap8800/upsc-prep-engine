@@ -205,18 +205,13 @@ function extractMainsQuestions(text: string): ExtractedQuestion[] {
     const num = parseInt(match[1], 10);
     let qText = match[2].trim();
     
-    // Isolate English from mixed block
-    // We look for "(Answer in" which marks the END of the English question
-    // The English question starts right after the Hindi marks, usually ending in " ) " or " ( "
-    const englishMarksIdx = qText.indexOf('(Answer in');
-    if (englishMarksIdx !== -1) {
-      let hindiMarksEndIdx = qText.lastIndexOf(')', englishMarksIdx - 1);
-      if (hindiMarksEndIdx === -1) hindiMarksEndIdx = qText.lastIndexOf('(', englishMarksIdx - 1);
-      if (hindiMarksEndIdx === -1) hindiMarksEndIdx = 0;
-      else hindiMarksEndIdx += 1;
-      
-      qText = qText.substring(hindiMarksEndIdx, englishMarksIdx).trim();
-    }
+    // Completely strip out Devanagari characters (U+0900 - U+097F)
+    // and common garbage symbols that appear in Hindi OCR (~, @, #, etc.)
+    qText = qText.replace(/[\u0900-\u097F~@#_\|\\]/g, ' ');
+    // Remove the "Answer in X words" text and the trailing marks score
+    qText = qText.replace(/\(Answer in \d+ words\) \d+(?:\s*½)?/i, ' ');
+    // Clean up multiple spaces and trim
+    qText = qText.replace(/\s+/g, ' ').trim();
 
     if (num > 0 && num <= 30 && qText.length > 15 && !isGarbageText(qText)) {
       if (questions.some(q => q.number === num)) continue;
