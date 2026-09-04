@@ -9,7 +9,9 @@ export interface ParsedPDF {
 }
 
 export async function parsePDF(filePath: string): Promise<ParsedPDF> {
-  const pdfParse = require('pdf-parse');
+  // Import the inner lib directly to avoid pdf-parse's index.js bug
+  // (it tries to read a non-existent test file on require)
+  const pdfParse = require('pdf-parse/lib/pdf-parse');
   const dataBuffer = fs.readFileSync(filePath);
   const data = await pdfParse(dataBuffer);
   
