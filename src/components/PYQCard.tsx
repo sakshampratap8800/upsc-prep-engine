@@ -39,7 +39,7 @@ export function PYQCard({
             </>
           )}
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-stone-800 line-clamp-3">
+        <p className="mt-2 text-sm leading-relaxed text-stone-800 whitespace-pre-line line-clamp-4">
           {questionText}
         </p>
         <div className="mt-3 flex items-center gap-2">

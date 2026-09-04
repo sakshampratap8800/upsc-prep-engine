@@ -6,7 +6,112 @@ import { FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 
 interface Props {
-  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string }>;
+  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string; openYear?: string }>;
+}
+
+type PYQListItem = {
+  id: number;
+  year: number;
+  examStage: string;
+  paper: string;
+  questionNumber: number | null;
+  questionText: string;
+  subjectArea: string | null;
+  difficulty: string | null;
+};
+
+type PageItem = number | 'ellipsis';
+type YearStat = { year: number; _count: { id: number } };
+type StageStat = { examStage: string; _count: { id: number } };
+type YearStagePaperStat = { year: number; examStage: string; paper: string; _count: { id: number } };
+
+const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Anthropology', 'Sociology'];
+
+function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number }) {
+  const params = new URLSearchParams();
+  if (filters.stage) params.set('stage', filters.stage);
+  if (filters.year) params.set('year', String(filters.year));
+  if (filters.paper) params.set('paper', filters.paper);
+  if (filters.page && filters.page > 1) params.set('page', String(filters.page));
+  if (filters.openYear) params.set('openYear', String(filters.openYear));
+
+  const query = params.toString();
+  return query ? `/pyq?${query}` : '/pyq';
+}
+
+function dedupePyqs(items: PYQListItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const normalizedText = item.questionText.trim().replace(/\s+/g, ' ').toLowerCase();
+    const key = item.examStage === 'Prelims' && item.questionNumber
+      ? [item.year, item.examStage, item.paper, item.questionNumber].join('|')
+      : [item.year, item.examStage, item.paper, item.questionNumber ?? '', normalizedText].join('|');
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getPageItems(currentPage: number, totalPages: number): PageItem[] {
+  if (totalPages <= 20) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set<number>([1, totalPages]);
+  for (let pageNumber = Math.max(2, currentPage - 2); pageNumber <= Math.min(totalPages - 1, currentPage + 2); pageNumber++) {
+    pages.add(pageNumber);
+  }
+
+  const sortedPages = Array.from(pages).sort((a, b) => a - b);
+  const items: PageItem[] = [];
+  for (const pageNumber of sortedPages) {
+    const previous = items[items.length - 1];
+    if (typeof previous === 'number' && pageNumber - previous > 1) {
+      items.push('ellipsis');
+    }
+    items.push(pageNumber);
+  }
+  return items;
+}
+
+function countYears(items: PYQListItem[]): YearStat[] {
+  const counts = new Map<number, YearStat>();
+  for (const item of items) {
+    const existing = counts.get(item.year);
+    if (existing) existing._count.id++;
+    else counts.set(item.year, { year: item.year, _count: { id: 1 } });
+  }
+  return Array.from(counts.values()).sort((a, b) => b.year - a.year);
+}
+
+function countStages(items: PYQListItem[]): StageStat[] {
+  const counts = new Map<string, StageStat>();
+  for (const item of items) {
+    const existing = counts.get(item.examStage);
+    if (existing) existing._count.id++;
+    else counts.set(item.examStage, { examStage: item.examStage, _count: { id: 1 } });
+  }
+  return Array.from(counts.values()).sort((a, b) =>
+    STAGE_ORDER.indexOf(a.examStage) - STAGE_ORDER.indexOf(b.examStage) ||
+    a.examStage.localeCompare(b.examStage)
+  );
+}
+
+function countYearStagePapers(items: PYQListItem[]): YearStagePaperStat[] {
+  const counts = new Map<string, YearStagePaperStat>();
+  for (const item of items) {
+    const key = [item.year, item.examStage, item.paper].join('|');
+    const existing = counts.get(key);
+    if (existing) existing._count.id++;
+    else counts.set(key, { year: item.year, examStage: item.examStage, paper: item.paper, _count: { id: 1 } });
+  }
+  return Array.from(counts.values()).sort((a, b) =>
+    b.year - a.year ||
+    STAGE_ORDER.indexOf(a.examStage) - STAGE_ORDER.indexOf(b.examStage) ||
+    a.examStage.localeCompare(b.examStage) ||
+    a.paper.localeCompare(b.paper)
+  );
 }
 
 export default async function PYQBrowserPage({ searchParams }: Props) {
@@ -15,13 +120,15 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
   const year = sp.year ? parseInt(sp.year, 10) : 0;
   const paper = sp.paper || '';
   const page = sp.page ? parseInt(sp.page, 10) : 1;
+  const openYear = sp.openYear ? parseInt(sp.openYear, 10) : 0;
   const perPage = 20;
 
-  let pyqs: Array<{ id: number; year: number; examStage: string; paper: string; questionNumber: number | null; questionText: string; subjectArea: string | null; difficulty: string | null }> = [];
+  let pyqs: PYQListItem[] = [];
   let totalCount = 0;
   let totalCountRaw = 0;
-  let yearStats: Array<{ year: number; _count: { id: number } }> = [];
-  let stageStats: Array<{ examStage: string; _count: { id: number } }> = [];
+  let yearStats: YearStat[] = [];
+  let stageStats: StageStat[] = [];
+  let yearStagePaperStats: YearStagePaperStat[] = [];
 
   try {
     const where: Record<string, unknown> = {};
@@ -29,33 +136,34 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
     if (year) where.year = year;
     if (paper) where.paper = paper;
 
-    [pyqs, totalCount] = await Promise.all([
-      prisma.pYQ.findMany({
-        where,
-        orderBy: [{ year: 'desc' }, { questionNumber: 'asc' }],
-        skip: (page - 1) * perPage,
-        take: perPage,
-      }),
-      prisma.pYQ.count({ where }),
-    ]);
+    const rawPyqs = await prisma.pYQ.findMany({
+      where,
+      orderBy: [{ year: 'desc' }, { examStage: 'asc' }, { paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
+    });
+    const uniquePyqs = dedupePyqs(rawPyqs);
+    totalCount = uniquePyqs.length;
+    pyqs = uniquePyqs.slice((page - 1) * perPage, page * perPage);
 
-    // Get filter options. For stage stats, we filter by year if selected. For year stats, we filter by stage if selected.
-    const yearWhere = stage ? { examStage: stage } : {};
-    const stageWhere = year ? { year: year } : {};
+    const allPyqs = dedupePyqs(await prisma.pYQ.findMany({
+      orderBy: [{ year: 'desc' }, { examStage: 'asc' }, { paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
+    }));
 
-    const rawYearStats = await prisma.pYQ.groupBy({ by: ['year'], _count: { id: true }, where: yearWhere, orderBy: { year: 'desc' } });
-    yearStats = rawYearStats;
-    const rawStageStats = await prisma.pYQ.groupBy({ by: ['examStage'], _count: { id: true }, where: stageWhere });
-    stageStats = rawStageStats;
-    
-    // Total unfiltered count for the "All" button
-    const rawTotalCount = await prisma.pYQ.count();
-    totalCountRaw = rawTotalCount;
+    yearStats = countYears(allPyqs);
+    stageStats = countStages(allPyqs);
+    yearStagePaperStats = countYearStagePapers(allPyqs);
+    totalCountRaw = allPyqs.length;
   } catch {
     // DB not ready
   }
 
   const totalPages = Math.ceil(totalCount / perPage);
+  const pageItems = getPageItems(page, totalPages);
+  const groupedPyqs = pyqs.reduce<Record<string, PYQListItem[]>>((acc, pyq) => {
+    const key = `${pyq.examStage} - ${pyq.paper}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(pyq);
+    return acc;
+  }, {});
 
   return (
     <div>
@@ -79,17 +187,17 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <div className="w-56 flex-shrink-0">
-            <div className="rounded-xl border border-stone-200 bg-white p-4">
+            <div className="sticky top-6 max-h-[40vh] overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
               <h3 className="text-sm font-bold text-stone-900">Exam Stage</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href={`/pyq${year ? `?year=${year}` : ''}`} className={`block rounded-lg px-3 py-1.5 text-sm ${!stage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                  <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm ${!stage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
                     All Stages
                   </Link>
                 </li>
                 {stageStats.map((s) => (
                   <li key={s.examStage}>
-                    <Link href={`/pyq?stage=${s.examStage}`} className={`block rounded-lg px-3 py-1.5 text-sm ${stage === s.examStage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                    <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm ${stage === s.examStage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
                       {s.examStage} ({s._count.id})
                     </Link>
                   </li>
@@ -99,36 +207,94 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
               <h3 className="mt-6 text-sm font-bold text-stone-900">Year</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href={`/pyq${stage ? `?stage=${stage}` : ''}`} className={`block rounded-lg px-3 py-1.5 text-sm ${!year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                  <Link href={buildPyqHref({ stage, paper })} className={`block rounded-lg px-3 py-1.5 text-sm ${!year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
                     All Years
                   </Link>
                 </li>
-                {yearStats.map((y) => (
-                  <li key={y.year}>
-                    <Link href={`/pyq?${stage ? `stage=${stage}&` : ''}year=${y.year}`} className={`block rounded-lg px-3 py-1.5 text-sm ${year === y.year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
-                      {y.year} ({y._count.id})
-                    </Link>
-                  </li>
-                ))}
+                {yearStats.map((y) => {
+                  const isOpen = openYear === y.year;
+                  const papersByStage = yearStagePaperStats
+                    .filter((p) => p.year === y.year)
+                    .reduce<Record<string, typeof yearStagePaperStats>>((acc, item) => {
+                      if (!acc[item.examStage]) acc[item.examStage] = [];
+                      acc[item.examStage].push(item);
+                      return acc;
+                    }, {});
+
+                  return (
+                    <li key={y.year}>
+                      <Link href={buildPyqHref({ stage, year: y.year, openYear: isOpen ? undefined : y.year })} className={`block rounded-lg px-3 py-1.5 text-sm ${year === y.year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                        {y.year} ({y._count.id})
+                      </Link>
+                      {isOpen && (
+                        <ul className="mt-1 space-y-1 border-l border-stone-200 pl-3">
+                          <li>
+                            <Link href={buildPyqHref({ stage, year: y.year, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs ${year === y.year && !paper ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'}`}>
+                              All papers
+                            </Link>
+                          </li>
+                          {Object.entries(papersByStage).map(([stageName, papers]) => (
+                            <li key={`${y.year}-${stageName}`}>
+                              <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-stone-400">{stageName}</p>
+                              <ul className="space-y-1">
+                                {papers.map((p) => (
+                                  <li key={`${y.year}-${stageName}-${p.paper}`}>
+                                    <Link href={buildPyqHref({ stage: p.examStage, year: y.year, paper: p.paper, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs ${year === y.year && stage === p.examStage && paper === p.paper ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'}`}>
+                                      {p.paper} ({p._count.id})
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
+
+              {paper && (
+                <div className="mt-4 rounded-lg bg-stone-50 p-3">
+                  <p className="text-xs font-medium text-stone-500">Active paper</p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-stone-800">{paper}</span>
+                    <Link href={buildPyqHref({ stage, year, openYear })} className="text-xs font-medium text-stone-500 hover:text-stone-900">
+                      Clear
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* PYQ List */}
           <div className="flex-1">
-            <div className="space-y-3">
-              {pyqs.map((pyq) => (
-                <PYQCard
-                  key={pyq.id}
-                  id={pyq.id}
-                  year={pyq.year}
-                  examStage={pyq.examStage}
-                  paper={pyq.paper}
-                  questionNumber={pyq.questionNumber || undefined}
-                  questionText={pyq.questionText}
-                  subjectArea={pyq.subjectArea || undefined}
-                  difficulty={pyq.difficulty || undefined}
-                />
+            <div className="space-y-6">
+              {Object.entries(groupedPyqs).map(([category, items]) => (
+                <section key={category}>
+                  <div className="mb-3 flex items-center justify-between border-b border-stone-200 pb-2">
+                    <h2 className="text-sm font-bold text-stone-900">{category}</h2>
+                    <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                      {items.length} shown
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {items.map((pyq) => (
+                      <PYQCard
+                        key={pyq.id}
+                        id={pyq.id}
+                        year={pyq.year}
+                        examStage={pyq.examStage}
+                        paper={pyq.paper}
+                        questionNumber={pyq.questionNumber || undefined}
+                        questionText={pyq.questionText}
+                        subjectArea={pyq.subjectArea || undefined}
+                        difficulty={pyq.difficulty || undefined}
+                      />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
 
@@ -136,13 +302,27 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-2">
                 {page > 1 && (
-                  <Link href={`/pyq?${stage ? `stage=${stage}&` : ''}${year ? `year=${year}&` : ''}page=${page - 1}`} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
+                  <Link href={buildPyqHref({ stage, year, paper, page: page - 1, openYear })} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
                     Previous
                   </Link>
                 )}
-                <span className="text-sm text-stone-500">Page {page} of {totalPages}</span>
+                {pageItems.map((item, index) => item === 'ellipsis' ? (
+                  <span key={`ellipsis-${index}`} className="px-1.5 text-sm text-stone-400">...</span>
+                ) : (
+                  <Link
+                    key={item}
+                    href={buildPyqHref({ stage, year, paper, page: item, openYear })}
+                    className={`min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm ${
+                      item === page
+                        ? 'border-stone-900 bg-stone-900 text-white'
+                        : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    {item}
+                  </Link>
+                ))}
                 {page < totalPages && (
-                  <Link href={`/pyq?${stage ? `stage=${stage}&` : ''}${year ? `year=${year}&` : ''}page=${page + 1}`} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
+                  <Link href={buildPyqHref({ stage, year, paper, page: page + 1, openYear })} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
                     Next
                   </Link>
                 )}

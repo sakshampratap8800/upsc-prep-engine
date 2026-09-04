@@ -25,9 +25,10 @@ export async function importSyllabus(): Promise<SyllabusImportResult> {
     const parsed = await parsePDF(filePath);
     const text = parsed.text;
 
-    // Extract syllabus structure
-    // UPSC syllabus typically has: Paper sections, topics under each
     const sections = extractSyllabusSections(text);
+
+    await prisma.syllabusTopic.deleteMany({});
+    await prisma.importLog.deleteMany({ where: { fileType: 'syllabus' } });
 
     for (const section of sections) {
       const parentTopic = await prisma.syllabusTopic.create({
@@ -71,133 +72,153 @@ interface SyllabusSection {
 }
 
 function extractSyllabusSections(text: string): SyllabusSection[] {
-  const sections: SyllabusSection[] = [];
+  return [
+    ...extractPrelimsSections(text),
+    ...extractMainSections(text),
+    ...extractOptionalSubjectSections(text, 'Anthropology', 'ANTHROPOLOGY', 'BOTANY'),
+    ...extractOptionalSubjectSections(text, 'Sociology', 'SOCIOLOGY'),
+  ].filter(section => section.subtopics.length > 0);
+}
 
-  // Try to detect GS Paper sections
-  // Common patterns: "PAPER-I", "Paper I", "General Studies I"
-  const paperPatterns = [
-    { pattern: /(?:PAPER[\s-]*I(?![IV]))|(?:General Studies[\s-]*I(?![IV]))/gi, paper: 'GS-I' },
-    { pattern: /(?:PAPER[\s-]*II)|(?:General Studies[\s-]*II)/gi, paper: 'GS-II' },
-    { pattern: /(?:PAPER[\s-]*III)|(?:General Studies[\s-]*III)/gi, paper: 'GS-III' },
-    { pattern: /(?:PAPER[\s-]*IV)|(?:General Studies[\s-]*IV)/gi, paper: 'GS-IV' },
-  ];
+function extractPrelimsSections(text: string): SyllabusSection[] {
+  const prelimsBlock = extractBetween(text, 'Part A—Preliminary Examination', 'Part B—Main Examination');
+  const paperOneBlock = extractBetween(prelimsBlock, 'Paper I - (200 marks)', 'Paper II-(200 marks)');
+  const paperTwoBlock = extractBetween(prelimsBlock, 'Paper II-(200 marks)', 'Note 1:');
 
-  // Split text into lines and look for topic-like content
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-  // Broad extraction: find lines that look like syllabus topics
-  // These tend to be medium-length lines with subject keywords
-  const topicKeywords = [
-    'Indian History', 'Indian Culture', 'Modern Indian History', 'Freedom Struggle',
-    'Post-independence', 'World History', 'Indian Society', 'Globalization',
-    'Social Empowerment', 'Communalism', 'Regionalism', 'Secularism',
-    'Geography', 'Physical Geography', 'Human Geography', 'Geomorphology',
-    'Climatology', 'Oceanography', 'Biogeography', 'Environment',
-    'Indian Constitution', 'Governance', 'Polity', 'Social Justice',
-    'International Relations', 'Indian Economy', 'Economic Development',
-    'Technology', 'Biodiversity', 'Disaster Management', 'Security',
-    'Ethics', 'Integrity', 'Aptitude', 'Attitude', 'Emotional Intelligence',
-    'Public Administration', 'Probity', 'Information Sharing',
-  ];
-
-  // Create default syllabus structure based on standard UPSC GS syllabus
-  const defaultSyllabus: SyllabusSection[] = [
+  return [
     {
-      name: 'Indian Heritage and Culture, History and Geography of the World and Society',
-      paper: 'GS-I',
-      subtopics: [
-        'Indian Culture - Art Forms, Literature, Architecture',
-        'Modern Indian History - Freedom Struggle',
-        'Post-independence Consolidation and Reorganization',
-        'History of the World - 18th century events, World Wars, Colonization',
-        'Indian Society - Features, Diversity, Role of Women',
-        'Social Empowerment, Communalism, Regionalism, Secularism',
-        'Salient features of World Physical Geography',
-        'Distribution of Key Natural Resources',
-        'Factors responsible for location of Industries',
-        'Important Geophysical phenomena - Earthquakes, Tsunami, Volcanic activity, Cyclone',
-      ],
-    },
-    {
-      name: 'Governance, Constitution, Polity, Social Justice and International Relations',
-      paper: 'GS-II',
-      subtopics: [
-        'Indian Constitution - Historical underpinnings, Evolution, Features, Amendments',
-        'Functions and Responsibilities of Union and States, Federal Structure',
-        'Separation of Powers, Dispute Redressal Mechanisms',
-        'Parliament and State Legislatures - Structure, Functioning, Conduct of Business',
-        'Structure, Organization and Functioning of Executive and Judiciary',
-        'Representation of People\'s Act',
-        'Statutory, Regulatory and Quasi-judicial Bodies',
-        'Government Policies and Interventions for Development',
-        'Development Processes and the Development Industry - NGOs, SHGs',
-        'Welfare Schemes for Vulnerable Sections',
-        'Issues relating to Health, Education, Human Resources',
-        'India and its Neighborhood Relations',
-        'Bilateral, Regional and Global Groupings affecting India',
-        'Effect of Policies of Developed and Developing Countries on India',
-        'Important International Institutions and Agencies',
-      ],
-    },
-    {
-      name: 'Technology, Economic Development, Biodiversity, Environment, Security and Disaster Management',
-      paper: 'GS-III',
-      subtopics: [
-        'Indian Economy - Issues relating to Planning, Resource Mobilization',
-        'Government Budgeting',
-        'Inclusive Growth and issues arising from it',
-        'Major Crops, Cropping Patterns, Irrigation, Farm Subsidies',
-        'Food Processing and Related Industries',
-        'Land Reforms in India',
-        'Effects of Liberalization on the Economy',
-        'Infrastructure - Energy, Ports, Roads, Airports, Railways',
-        'Investment Models',
-        'Science and Technology - Developments, Applications, Effects',
-        'Awareness in IT, Space, Computers, Robotics, Nano-technology, Bio-technology',
-        'Environmental Conservation, Environmental Pollution and Degradation',
-        'Biodiversity and its Conservation',
-        'Disaster Management',
-        'Linkages between Development and Spread of Extremism',
-        'Role of External State and Non-state Actors in creating challenges to Internal Security',
-        'Challenges to Internal Security - Communication Networks, Cyber Security',
-        'Money Laundering and its Prevention',
-        'Border Area Security Challenges and Management',
-      ],
-    },
-    {
-      name: 'Ethics, Integrity and Aptitude',
-      paper: 'GS-IV',
-      subtopics: [
-        'Ethics and Human Interface - Essence, Determinants, Consequences',
-        'Dimensions of Ethics - Private and Public Relationships',
-        'Attitude - Content, Structure, Function; Influence and Relation with Thought and Behaviour',
-        'Aptitude and Foundational Values for Civil Service',
-        'Emotional Intelligence - Concepts and Dimensions',
-        'Contributions of Moral Thinkers and Philosophers',
-        'Public/Civil Service Values and Ethics in Public Administration',
-        'Probity in Governance - Concept, Philosophical Basis',
-        'Information Sharing and Transparency in Government',
-        'Right to Information, Codes of Ethics, Codes of Conduct',
-        'Citizen\'s Charters, Transparency and Accountability',
-        'Ethical Issues in International Relations and Funding',
-        'Corporate Governance',
-        'Case Studies on above issues',
-      ],
-    },
-    {
-      name: 'Preliminary Examination - General Studies',
+      name: 'Paper I - General Studies',
       paper: 'Prelims',
-      subtopics: [
-        'Current events of national and international importance',
-        'History of India and Indian National Movement',
-        'Indian and World Geography - Physical, Social, Economic',
-        'Indian Polity and Governance - Constitution, Political System, Panchayati Raj',
-        'Economic and Social Development - Sustainable Development, Poverty, Demographics',
-        'General issues on Environmental Ecology, Biodiversity and Climate Change',
-        'General Science',
-      ],
+      subtopics: extractBulletTopics(paperOneBlock),
+    },
+    {
+      name: 'Paper II - CSAT',
+      paper: 'Prelims',
+      subtopics: extractBulletTopics(paperTwoBlock),
     },
   ];
+}
 
-  return defaultSyllabus;
+function extractMainSections(text: string): SyllabusSection[] {
+  const essayBlock = extractBetween(text, 'PAPER-I', 'PAPER-II');
+  const gsOneBlock = extractBetween(text, 'PAPER-II', 'PAPER-III');
+  const gsTwoBlock = extractBetween(text, 'PAPER-III', 'PAPER-IV');
+  const gsThreeBlock = extractBetween(text, 'PAPER-IV', 'PAPER-V');
+  const gsFourBlock = extractBetween(text, 'PAPER-V', 'ANTHROPOLOGY');
+
+  return [
+    {
+      name: 'Essay',
+      paper: 'Essay',
+      subtopics: [cleanTopic(essayBlock.replace(/^Essay:\s*/i, ''))].filter(Boolean),
+    },
+    {
+      name: cleanHeading(gsOneBlock, 'General Studies-I:'),
+      paper: 'GS-I',
+      subtopics: extractBulletTopics(gsOneBlock),
+    },
+    {
+      name: cleanHeading(gsTwoBlock, 'General Studies- II:'),
+      paper: 'GS-II',
+      subtopics: extractBulletTopics(gsTwoBlock),
+    },
+    {
+      name: cleanHeading(gsThreeBlock, 'General Studies-III:'),
+      paper: 'GS-III',
+      subtopics: extractBulletTopics(gsThreeBlock),
+    },
+    {
+      name: cleanHeading(gsFourBlock, 'General Studies- IV:'),
+      paper: 'GS-IV',
+      subtopics: extractBulletTopics(gsFourBlock),
+    },
+  ];
+}
+
+function extractOptionalSubjectSections(
+  text: string,
+  subject: 'Anthropology' | 'Sociology',
+  startHeading: string,
+  endHeading?: string,
+): SyllabusSection[] {
+  const subjectBlock = extractBetween(text, startHeading, endHeading);
+  const paperOneMarker = subject === 'Sociology' ? 'PAPER– I' : 'PAPER-I';
+  const paperTwoMarker = subject === 'Sociology' ? 'PAPER–II' : 'PAPER-II';
+  const paperOneBlock = extractBetween(subjectBlock, paperOneMarker, paperTwoMarker);
+  const paperTwoBlock = extractBetween(subjectBlock, paperTwoMarker);
+
+  return [
+    {
+      name: `${subject} Paper-I`,
+      paper: subject,
+      subtopics: extractNumberedTopics(paperOneBlock),
+    },
+    {
+      name: `${subject} Paper-II`,
+      paper: subject,
+      subtopics: extractNumberedTopics(paperTwoBlock),
+    },
+  ];
+}
+
+function extractBetween(text: string, start: string, end?: string): string {
+  const startIndex = text.indexOf(start);
+  if (startIndex === -1) return '';
+
+  const contentStart = startIndex + start.length;
+  const endIndex = end ? text.indexOf(end, contentStart) : -1;
+  return text.slice(contentStart, endIndex === -1 ? undefined : endIndex).trim();
+}
+
+function cleanHeading(block: string, marker: string): string {
+  const markerIndex = block.indexOf(marker);
+  if (markerIndex === -1) return marker.replace(':', '').trim();
+
+  const content = block.slice(markerIndex + marker.length);
+  const bulletIndex = content.indexOf('');
+  return cleanTopic(content.slice(0, bulletIndex === -1 ? undefined : bulletIndex));
+}
+
+function extractBulletTopics(block: string): string[] {
+  const topics: string[] = [];
+  const matches = block.matchAll(/\s*([\s\S]*?)(?=\n\s*|$)/g);
+
+  for (const match of matches) {
+    const topic = cleanTopic(match[1]);
+    if (topic) topics.push(topic);
+  }
+
+  return topics;
+}
+
+function extractNumberedTopics(block: string): string[] {
+  const topics: string[] = [];
+  const lines = block
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !/^\d+$/.test(line));
+
+  let current = '';
+  const topicStartPattern = /^(?:\d+(?:\.\d+)*\.?|[A-Z]\.)\s+/;
+
+  for (const line of lines) {
+    if (topicStartPattern.test(line)) {
+      if (current) topics.push(cleanTopic(current));
+      current = line;
+    } else if (current) {
+      current += ` ${line}`;
+    }
+  }
+
+  if (current) topics.push(cleanTopic(current));
+
+  return topics.filter(Boolean);
+}
+
+function cleanTopic(value: string): string {
+  return value
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .replace(/([.;:])([A-Za-z])/g, '$1 $2')
+    .trim();
 }

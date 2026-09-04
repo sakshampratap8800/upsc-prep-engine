@@ -1,19 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleAIFileManager } from '@google/generative-ai/server';
 import prisma from '../db';
 import { PYQ_DIRS } from '../constants';
 import fs from 'fs';
 import path from 'path';
 
-// Use the key from env, fallback to the one provided by user in chitchat script
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyC0BbGX8p02h0ZMFvr0v69qLtL8I_w_WLQ';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
 
-// We'll rotate models if one hits rate limits
 const MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-8b',
-  'gemini-2.0-flash',
-  'gemini-2.5-flash-lite'
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
 ];
 let currentModelIndex = 0;
 
@@ -32,7 +30,7 @@ function rotateModel() {
 }
 
 export async function importPYQsWithGemini() {
-  console.log('Starting Gemini PYQ Importer...');
+  console.log('Starting Gemini PYQ Importer (File API Enabled)...');
   const result = { success: true, totalImported: 0, questionsExtracted: 0, errors: [] as string[] };
 
   for (const [examStage, baseDir] of Object.entries(PYQ_DIRS)) {
@@ -49,10 +47,24 @@ export async function importPYQsWithGemini() {
         const filePath = path.join(yearPath, file);
         const paper = identifyPaper(file, examStage);
 
-        // Check if already processed
-        const existing = await prisma.importLog.findFirst({
-          where: { fileName: file, fileType: examStage, status: 'success' },
-        });
+        // Check if already processed with retry
+        let existing = null;
+        let checkRetries = 3;
+        while (checkRetries > 0) {
+          try {
+            existing = await prisma.importLog.findFirst({
+              where: { fileName: file, fileType: examStage, status: 'success' },
+            });
+            break;
+          } catch (err: any) {
+            checkRetries--;
+            if (checkRetries === 0) {
+              console.warn(`Could not check importLog for ${file}, assuming not imported:`, err.message?.slice(0, 80));
+            } else {
+              await delay(2000);
+            }
+          }
+        }
         if (existing) {
           console.log(`Skipping (already processed): ${file}`);
           continue;
@@ -64,43 +76,73 @@ export async function importPYQsWithGemini() {
           console.log(` -> Extracted ${questions.length} questions`);
 
           if (questions.length > 0) {
-            // Save to DB
+            // Group sub-parts (a, b, c) by main_number into unified formatted questions
+            const groupedByNumber = new Map<number, { textParts: string[]; options: string[] | null; type: string }>();
             for (const q of questions) {
-              const fullText = q.part ? `(${q.part}) ${q.text}` : q.text;
-              await prisma.pYQ.create({
-                data: {
-                  year,
-                  examStage: examStage.charAt(0).toUpperCase() + examStage.slice(1),
-                  paper,
-                  questionNumber: q.main_number,
-                  questionText: fullText,
-                  questionType: examStage === 'prelims' ? 'MCQ' : 'Descriptive',
-                  sourceFile: file,
-                  confidence: 0.95,
-                  optionsJson: q.options ? JSON.stringify(q.options) : null
-                }
-              });
+              const num = q.main_number || 1;
+              const formattedPart = q.part ? `(${q.part}) ${q.text}` : q.text;
+              if (!groupedByNumber.has(num)) {
+                groupedByNumber.set(num, {
+                  textParts: [formattedPart],
+                  options: q.options || null,
+                  type: examStage === 'prelims' ? 'MCQ' : 'Descriptive',
+                });
+              } else {
+                groupedByNumber.get(num)!.textParts.push(formattedPart);
+              }
             }
-            result.questionsExtracted += questions.length;
+
+            for (const [qNum, qData] of groupedByNumber.entries()) {
+              const unifiedText = qData.textParts.join('\n\n');
+              let dbRetries = 3;
+              while (dbRetries > 0) {
+                try {
+                  await prisma.pYQ.create({
+                    data: {
+                      year,
+                      examStage: examStage.charAt(0).toUpperCase() + examStage.slice(1),
+                      paper,
+                      questionNumber: qNum,
+                      questionText: unifiedText,
+                      questionType: qData.type,
+                      sourceFile: file,
+                      confidence: 0.95,
+                      optionsJson: qData.options ? JSON.stringify(qData.options) : null
+                    }
+                  });
+                  break;
+                } catch (dbErr: any) {
+                  dbRetries--;
+                  if (dbRetries === 0) throw dbErr;
+                  console.log(`    [!] DB write retry (${dbRetries} left): ${dbErr.message?.slice(0, 80)}`);
+                  await delay(2000);
+                }
+              }
+            }
+            result.questionsExtracted += groupedByNumber.size;
             result.totalImported++;
 
-            await prisma.importLog.create({
-              data: { fileName: file, fileType: examStage, status: 'success', message: `Extracted ${questions.length} using Gemini` }
-            });
+            let logRetries = 3;
+            while (logRetries > 0) {
+              try {
+                await prisma.importLog.create({
+                  data: { fileName: file, fileType: examStage, status: 'success', message: `Extracted ${questions.length} using Gemini File API` }
+                });
+                break;
+              } catch (logErr) {
+                logRetries--;
+                if (logRetries === 0) console.warn('Could not write import log for:', file);
+                await delay(1000);
+              }
+            }
           }
           
-          // Wait to respect rate limits
+          // Small delay between PDFs to stay within RPM
           await delay(4500);
 
         } catch (err: any) {
           console.error(` -> Error processing ${file}:`, err.message);
           result.errors.push(`${file}: ${err.message}`);
-          
-          if (err.message?.includes('429')) {
-            console.log(' -> Rate limit hit. Rotating model and pausing for 30s...');
-            rotateModel();
-            await delay(30000);
-          }
         }
       }
     }
@@ -111,8 +153,12 @@ export async function importPYQsWithGemini() {
 }
 
 async function extractQuestionsFromPDF(filePath: string, examStage: string) {
-  const fileBytes = fs.readFileSync(filePath);
-  const base64Data = fileBytes.toString('base64');
+  // Step 1: Upload via Google AI File Manager (supports large PDFs up to 2GB)
+  console.log(`    Uploading PDF via Google File API...`);
+  const uploadResult = await fileManager.uploadFile(filePath, {
+    mimeType: 'application/pdf',
+    displayName: path.basename(filePath),
+  });
   
   const prompt = `You are a strict data extraction AI processing a UPSC CSE Question Paper PDF.
 Your task is to extract every question in perfectly clean English.
@@ -125,54 +171,63 @@ CRITICAL RULES:
 [
   {
     "main_number": 1,
-    "part": "a", // omit if not a subpart
+    "part": "a",
     "text": "The actual English question text...",
-    "options": ["(a) Option 1", "(b) Option 2"] // only for MCQs, omit otherwise
+    "options": ["(a) Option 1", "(b) Option 2"]
   }
 ]
 5. Only extract the question text, ignore administrative instructions (e.g. "Write on the following in about 150 words", "Maximum Marks").
-6. NEVER USE MARKDOWN \`\`\`json BLOCKS. Output raw JSON ONLY.`;
+6. Output raw JSON ONLY.`;
 
-  let retries = 2;
-  while (retries > 0) {
+  let attempt = 0;
+  while (true) {
+    attempt++;
     try {
       const model = getModel();
+      console.log(`    (Attempt ${attempt} - Querying model: ${MODELS[currentModelIndex]}...)`);
       const result = await model.generateContent([
-        { inlineData: { data: base64Data, mimeType: 'application/pdf' } },
+        {
+          fileData: {
+            mimeType: uploadResult.file.mimeType,
+            fileUri: uploadResult.file.uri,
+          }
+        },
         prompt
       ]);
       const response = result.response.text();
-      // Safely parse
+      
+      const jsonMatch = response.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
       const cleanedJson = response.replace(/^```json/m, '').replace(/```$/m, '').trim();
       return JSON.parse(cleanedJson);
     } catch (e: any) {
-      if (e.message?.includes('429')) throw e; // Let main loop handle rotation
-      retries--;
-      if (retries === 0) throw e;
-      await delay(2000);
+      console.log(`    [!] Model ${MODELS[currentModelIndex]} error (retrying indefinitely): ${e.message?.slice(0, 120)}...`);
+      rotateModel();
+      const waitTime = e.message?.includes('429') ? 10000 : 4000;
+      await delay(waitTime);
     }
   }
-  return [];
 }
 
 function identifyPaper(fileName: string, examStage: string): string {
   const fn = fileName.toLowerCase();
   if (examStage === 'prelims') {
-    if (fn.includes('paper1') || fn.includes('paper-1') || fn.includes('paper_1')) return 'Paper 1 (GS)';
-    if (fn.includes('paper2') || fn.includes('paper-2') || fn.includes('paper_2')) return 'Paper 2 (CSAT)';
+    if (fn.includes('paper2') || fn.includes('paper-2') || fn.includes('paper_2') || fn.includes('csat')) return 'Paper 2 (CSAT)';
     return 'Paper 1 (GS)';
   }
   if (examStage === 'mains') {
-    if (fn.includes('_i_') || fn.includes('-i-') || fn.includes('_i.') || fn.includes('paper-i') || fn.includes('paper i') || fn.includes('gs1') || fn.includes('genstud_i') || fn.includes('gen_st_p1') || fn.includes('paper - i')) return 'GS-I';
-    if (fn.includes('_ii_') || fn.includes('-ii-') || fn.includes('_ii.') || fn.includes('paper-ii') || fn.includes('paper ii') || fn.includes('gs2') || fn.includes('genstud_ii') || fn.includes('gen_st_p2') || fn.includes('paper - ii')) return 'GS-II';
-    if (fn.includes('_iii') || fn.includes('-iii') || fn.includes('gs3') || fn.includes('genstud_iii') || fn.includes('gen_st_p3') || fn.includes('paper - iii')) return 'GS-III';
-    if (fn.includes('_iv') || fn.includes('-iv') || fn.includes('gs4') || fn.includes('genstud_iv') || fn.includes('gen_st_p4') || fn.includes('paper - iv')) return 'GS-IV';
-    return 'GS-I'; 
+    if (/(?:paper[\s\-_]*iv|gen(?:stud|eral[\s\-_]*studies)[\s\-_]*iv|_iv[_\.]|gs[\s\-_]*4|gen_st_p4)/i.test(fn)) return 'GS-IV';
+    if (/(?:paper[\s\-_]*iii|gen(?:stud|eral[\s\-_]*studies)[\s\-_]*iii|_iii[_\.]|gs[\s\-_]*3|gen_st_p3)/i.test(fn)) return 'GS-III';
+    if (/(?:paper[\s\-_]*ii|gen(?:stud|eral[\s\-_]*studies)[\s\-_]*ii|_ii[_\.]|gs[\s\-_]*2|gen_st_p2)/i.test(fn)) return 'GS-II';
+    if (/(?:paper[\s\-_]*i(?![ivx])|gen(?:stud|eral[\s\-_]*studies)[\s\-_]*i(?![ivx])|_i[_\.]|gs[\s\-_]*1|gen_st_p1)/i.test(fn)) return 'GS-I';
+    return 'GS-I';
   }
   if (examStage === 'essay') return 'Essay';
   if (examStage === 'anthropology' || examStage === 'sociology') {
     const subject = examStage.charAt(0).toUpperCase() + examStage.slice(1);
-    if (fn.includes('paper-ii') || fn.includes('paper_ii') || fn.includes('paper ii') || fn.includes('2.pdf') || fn.includes('_ii.') || fn.includes('-ii.') || fn.includes('-ii-')) return `${subject} Paper-II`;
+    if (/(?:paper[\s\-_]*ii|2\.pdf|_ii[_\.])/i.test(fn)) return `${subject} Paper-II`;
     return `${subject} Paper-I`;
   }
   return 'Unknown';
