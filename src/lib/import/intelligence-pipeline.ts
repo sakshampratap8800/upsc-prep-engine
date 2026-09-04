@@ -20,7 +20,7 @@ async function callGroq(systemPrompt: string, userPrompt: string): Promise<strin
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.1-70b-versatile',
+      model: 'qwen/qwen3.8-27b',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -63,8 +63,9 @@ export async function mapChaptersToTopics(): Promise<MappingResult> {
 
   const topicList = allTopics.map(t => `${t.id}: [${t.paper}] ${t.name}`).join('\n');
 
-  // Load all chapters with their book info
+  // Load chapters that haven't been mapped yet
   const chapters = await prisma.chapter.findMany({
+    where: { topics: { none: {} } },
     select: {
       id: true,
       number: true,
@@ -178,6 +179,7 @@ RULES:
   for (let skip = 0; skip < totalPYQs; skip += BATCH_SIZE) {
     try {
       const pyqs = await prisma.pYQ.findMany({
+        where: { topics: { none: {} } },
         select: { id: true, year: true, examStage: true, paper: true, questionText: true },
         skip,
         take: BATCH_SIZE,
