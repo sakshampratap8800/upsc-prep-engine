@@ -193,40 +193,39 @@ function extractPrelimsQuestions(text: string): ExtractedQuestion[] {
 function extractMainsQuestions(text: string): ExtractedQuestion[] {
   const questions: ExtractedQuestion[] = [];
   
-  // Mains pattern: Q.1, 1., Q1., etc. followed by question text
-  const patterns = [
-    /(?:^|\n)\s*(?:Q\.?\s*)?(\d+)\.?\s*(?:\(a\)|[\)])?\s+([\s\S]*?)(?=\n\s*(?:Q\.?\s*)?\d+\.?\s|$)/gm,
-    /(?:^|\n)\s*(\d+)\)\s+([\s\S]*?)(?=\n\s*\d+\)|$)/gm,
-  ];
+  // Adobe Acrobat OCR puts EVERY WORD on a new line. We must flatten the text first.
+  const flatText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ');
   
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null && questions.length < 30) {
-      const num = parseInt(match[1], 10);
-      let qText = match[2].trim().replace(/\s+/g, ' ');
+  // Pattern: " 1 . [Hindi] (Answer in 150 words) 10 " OR " 1 . [Hindi] (Answer in 250 words) 15 "
+  // We need to capture the question number, and then the text up to the next number
+  const pattern = /\s(?:Q\.?\s*)?(\d+)\s*\.\s+([\s\S]*?)(?=\s(?:Q\.?\s*)?\d+\s*\.\s|$)/g;
+  
+  let match;
+  while ((match = pattern.exec(flatText)) !== null && questions.length < 30) {
+    const num = parseInt(match[1], 10);
+    let qText = match[2].trim();
+    
+    // Isolate English from mixed block
+    // We look for "(Answer in" which marks the END of the English question
+    // The English question starts right after the Hindi marks, usually ending in " ) " or " ( "
+    const englishMarksIdx = qText.indexOf('(Answer in');
+    if (englishMarksIdx !== -1) {
+      let hindiMarksEndIdx = qText.lastIndexOf(')', englishMarksIdx - 1);
+      if (hindiMarksEndIdx === -1) hindiMarksEndIdx = qText.lastIndexOf('(', englishMarksIdx - 1);
+      if (hindiMarksEndIdx === -1) hindiMarksEndIdx = 0;
+      else hindiMarksEndIdx += 1;
       
-      // Attempt to isolate the English part from the mixed Hindi/English block
-      // Example structure: [Hindi Text] (~ 150 ~ # ~) [English Text] (Answer in 150 words) 10
-      // We want everything from the last closing parenthesis of the Hindi marks, up to the English marks
-      const englishMarksIdx = qText.indexOf('(Answer in');
-      if (englishMarksIdx !== -1) {
-        let hindiMarksEndIdx = qText.lastIndexOf(')', englishMarksIdx - 1);
-        if (hindiMarksEndIdx === -1) hindiMarksEndIdx = 0;
-        else hindiMarksEndIdx += 1;
-        
-        qText = qText.substring(hindiMarksEndIdx, englishMarksIdx).trim();
-      }
-
-      if (num > 0 && num <= 30 && qText.length > 15 && !isGarbageText(qText)) {
-        if (questions.some(q => q.number === num)) continue;
-        questions.push({
-          number: num,
-          text: qText,
-          type: 'Descriptive',
-        });
-      }
+      qText = qText.substring(hindiMarksEndIdx, englishMarksIdx).trim();
     }
-    if (questions.length > 0) break;
+
+    if (num > 0 && num <= 30 && qText.length > 15 && !isGarbageText(qText)) {
+      if (questions.some(q => q.number === num)) continue;
+      questions.push({
+        number: num,
+        text: qText,
+        type: 'Descriptive',
+      });
+    }
   }
   
   // Fallback: if no questions found, store entire text as a single entry
