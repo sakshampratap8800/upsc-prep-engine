@@ -103,7 +103,16 @@ function extractMainSections(text: string): SyllabusSection[] {
   const gsOneBlock = extractBetween(text, 'PAPER-II', 'PAPER-III');
   const gsTwoBlock = extractBetween(text, 'PAPER-III', 'PAPER-IV');
   const gsThreeBlock = extractBetween(text, 'PAPER-IV', 'PAPER-V');
-  const gsFourBlock = extractBetween(text, 'PAPER-V', 'ANTHROPOLOGY');
+  let gsFourBlock = extractBetween(text, 'PAPER-V', 'AGRICULTURE');
+  if (!gsFourBlock) {
+    gsFourBlock = extractBetween(text, 'PAPER-V', 'ANTHROPOLOGY');
+  }
+
+  // Ensure GS-IV truncates after Case Studies on above issues
+  const caseStudiesIdx = gsFourBlock.indexOf('Case Studies on above issues');
+  if (caseStudiesIdx !== -1) {
+    gsFourBlock = gsFourBlock.slice(0, caseStudiesIdx + 'Case Studies on above issues.'.length);
+  }
 
   return [
     {

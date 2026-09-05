@@ -5,13 +5,7 @@ import Link from 'next/link';
 import {
   GraduationCap,
   Search,
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
   ExternalLink,
-  Layers,
-  Sparkles,
-  CheckCircle2,
   Copy,
   Check,
 } from 'lucide-react';
@@ -49,7 +43,7 @@ interface ParsedRomanSection {
 interface ParsedTopicStructure {
   type: 'roman_sections' | 'alpha_items' | 'semicolon_list' | 'simple';
   title: string;
-  prefix?: string;
+  hasSubContent: boolean;
   sections?: ParsedRomanSection[];
   items?: ParsedAlphaItem[];
 }
@@ -96,13 +90,14 @@ export function parseSyllabusString(text: string): ParsedTopicStructure {
     return {
       type: 'roman_sections',
       title: mainTitle,
+      hasSubContent: sections.length > 0,
       sections,
     };
   }
 
   // 2. Check for alphabetical subtopics: (a), (b), (c)...
   const alphaItems = parseAlphaItems(trimmed);
-  if (alphaItems.length > 0) {
+  if (alphaItems.length > 1) {
     const firstAlphaIdx = trimmed.search(/\([a-z]\)/i);
     let title = trimmed;
     if (firstAlphaIdx !== -1) {
@@ -111,11 +106,12 @@ export function parseSyllabusString(text: string): ParsedTopicStructure {
     return {
       type: 'alpha_items',
       title: title || trimmed,
+      hasSubContent: true,
       items: alphaItems,
     };
   }
 
-  // 3. Check for Colon with semicolon-separated list (e.g. GS-IV topics)
+  // 3. Check for Colon with semicolon-separated list (e.g. GS-IV Ethics topics)
   const colonIdx = trimmed.indexOf(':');
   if (colonIdx > 0 && colonIdx < 70) {
     const title = trimmed.slice(0, colonIdx).trim();
@@ -125,15 +121,17 @@ export function parseSyllabusString(text: string): ParsedTopicStructure {
       return {
         type: 'semicolon_list',
         title,
+        hasSubContent: true,
         items: semiParts.map((s) => ({ label: '•', text: s })),
       };
     }
   }
 
-  // 4. Default simple topic
+  // 4. Default simple topic (e.g. Prelims, GS statements)
   return {
     type: 'simple',
     title: trimmed,
+    hasSubContent: false,
     items: [],
   };
 }
@@ -163,21 +161,12 @@ function parseAlphaItems(str: string): ParsedAlphaItem[] {
 export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewProps) {
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   // Collect available filter tabs
   const filterTabs = useMemo(() => {
-    const set = new Set<string>();
-    for (const t of initialTopics) {
-      if (t.name.includes('Paper-I') || t.name.includes('Paper-II')) {
-        set.add(t.name);
-      } else {
-        set.add(t.paper);
-      }
-    }
     return ['ALL', 'Prelims', 'GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Essay', 'Sociology Paper-I', 'Sociology Paper-II'];
-  }, [initialTopics]);
+  }, []);
 
   // Filter topics based on active tab and search query
   const filteredParents = useMemo(() => {
@@ -205,13 +194,6 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
       .filter(Boolean) as ParentTopic[];
   }, [initialTopics, selectedFilter, searchQuery]);
 
-  const toggleSection = (key: string) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [key]: prev[key] === undefined ? false : !prev[key],
-    }));
-  };
-
   const copyToClipboard = (text: string, id: number) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -236,7 +218,7 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 cursor-pointer"
               >
                 Clear
               </button>
@@ -293,32 +275,74 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                   </h2>
                 </div>
                 <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                  {parent.children.length} {parent.children.length === 1 ? 'Unit' : 'Units'}
+                  {parent.children.length} {parent.children.length === 1 ? 'Topic' : 'Topics'}
                 </span>
               </div>
 
-              {/* Units / Subtopics Grid */}
-              <div className="space-y-3.5">
+              {/* Topics Grid */}
+              <div className="space-y-3">
                 {parent.children.map((child, idx) => {
                   const parsed = parseSyllabusString(child.name);
-                  const isCollapsed = expandedSections[`child-${child.id}`] === false;
 
+                  // CASE A: Topic has NO subsections (Simple topic like Prelims, GS points)
+                  // Render single clean row/card without duplicate lower body
+                  if (!parsed.hasSubContent) {
+                    return (
+                      <div
+                        key={child.id}
+                        className="group flex items-start justify-between gap-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 sm:p-4.5 shadow-xs hover:border-stone-300 dark:hover:border-stone-700 transition"
+                      >
+                        <div className="flex items-start gap-3 flex-1">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-stone-100 dark:bg-stone-800 text-[11px] font-bold text-stone-700 dark:text-stone-300">
+                            {idx + 1}
+                          </span>
+                          <p className="text-sm font-medium text-stone-900 dark:text-stone-100 leading-relaxed">
+                            {parsed.title}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                          <button
+                            onClick={() => copyToClipboard(child.name, child.id)}
+                            title="Copy topic text"
+                            className="rounded-lg p-1.5 text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200 transition cursor-pointer"
+                          >
+                            {copiedId === child.id ? (
+                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </button>
+
+                          <Link
+                            href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
+                            title="Search PYQs and Books for this topic"
+                            className="flex items-center gap-1 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-2.5 py-1 text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span className="hidden sm:inline">Search PYQs</span>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // CASE B: Topic HAS subsections / subtopics (e.g. Sociology with (a), (b), (c))
                   return (
                     <div
                       key={child.id}
-                      className="group rounded-xl border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-stone-900/90 shadow-xs hover:border-stone-300 dark:hover:border-stone-700 transition-all overflow-hidden"
+                      className="group rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs hover:border-stone-300 dark:hover:border-stone-700 transition overflow-hidden"
                     >
                       {/* Topic Card Header */}
-                      <div className="flex items-start justify-between gap-3 p-4 sm:p-5 bg-stone-50/50 dark:bg-stone-850/50 border-b border-stone-100 dark:border-stone-800/60">
+                      <div className="flex items-start justify-between gap-3 p-4 sm:p-4.5 bg-stone-50/70 dark:bg-stone-850/60 border-b border-stone-100 dark:border-stone-800">
                         <div className="flex items-start gap-3 flex-1">
                           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-stone-200 dark:bg-stone-800 text-[11px] font-bold text-stone-700 dark:text-stone-300">
                             {idx + 1}
                           </span>
-                          <div className="space-y-1 flex-1">
-                            <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug">
-                              {parsed.title}
-                            </h3>
-                          </div>
+                          <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug">
+                            {parsed.title}
+                          </h3>
                         </div>
 
                         {/* Action buttons */}
@@ -336,9 +360,9 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           </button>
 
                           <Link
-                            href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, ''))}`}
+                            href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
                             title="Search PYQs and Books for this topic"
-                            className="flex items-center gap-1 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-2 py-1 text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition"
+                            className="flex items-center gap-1 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-2.5 py-1 text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition"
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span className="hidden sm:inline">Search PYQs</span>
@@ -347,23 +371,23 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                       </div>
 
                       {/* Structured Subtopics Breakdown */}
-                      <div className="p-4 sm:p-5">
-                        {/* CASE 1: Alphabetical Subtopics (a), (b), (c)... */}
-                        {parsed.type === 'alpha_items' && parsed.items && parsed.items.length > 0 && (
-                          <div className="space-y-2.5">
+                      <div className="p-4 sm:p-4.5">
+                        {/* Alphabetical Subtopics (a), (b), (c)... */}
+                        {parsed.type === 'alpha_items' && parsed.items && (
+                          <div className="space-y-2">
                             {parsed.items.map((item, itemIdx) => (
                               <div
                                 key={itemIdx}
-                                className="flex items-start gap-3 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/40 p-3 hover:bg-stone-100/70 dark:hover:bg-stone-800/70 transition"
+                                className="flex items-start gap-3 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 p-2.5 sm:p-3 hover:bg-stone-100/60 dark:hover:bg-stone-800/60 transition"
                               >
-                                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/50 px-1.5 text-xs font-bold text-amber-800 dark:text-amber-300 shrink-0">
+                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/50 px-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 shrink-0">
                                   {item.label}
                                 </span>
                                 <div className="flex-1 text-xs sm:text-sm leading-relaxed text-stone-800 dark:text-stone-200">
                                   {item.text}
                                 </div>
                                 <Link
-                                  href={`/search?q=${encodeURIComponent(item.text.slice(0, 50))}`}
+                                  href={`/search?q=${encodeURIComponent(item.text.slice(0, 60))}`}
                                   title="Find PYQs for this specific point"
                                   className="text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 p-1 shrink-0"
                                 >
@@ -374,13 +398,13 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           </div>
                         )}
 
-                        {/* CASE 2: Nested Roman Numeral Sections (i), (ii) + (a), (b), (c)... */}
-                        {parsed.type === 'roman_sections' && parsed.sections && parsed.sections.length > 0 && (
-                          <div className="space-y-4">
+                        {/* Nested Roman Numeral Sections (i), (ii) + (a), (b), (c)... */}
+                        {parsed.type === 'roman_sections' && parsed.sections && (
+                          <div className="space-y-3.5">
                             {parsed.sections.map((sec, secIdx) => (
                               <div
                                 key={secIdx}
-                                className="rounded-lg border border-stone-200/90 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/40 p-3.5 sm:p-4 space-y-3"
+                                className="rounded-lg border border-stone-200/90 dark:border-stone-800 bg-stone-50/40 dark:bg-stone-850/40 p-3 sm:p-3.5 space-y-2.5"
                               >
                                 {/* Section Header */}
                                 <div className="flex items-center gap-2">
@@ -393,11 +417,11 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                                 </div>
 
                                 {/* Sub-items */}
-                                <div className="space-y-2 pl-2 sm:pl-3 border-l-2 border-stone-200 dark:border-stone-700">
+                                <div className="space-y-1.5 pl-2 sm:pl-3 border-l-2 border-stone-200 dark:border-stone-700">
                                   {sec.items.map((subItem, sIdx) => (
                                     <div
                                       key={sIdx}
-                                      className="flex items-start gap-2.5 rounded-md bg-white dark:bg-stone-800/80 border border-stone-200/70 dark:border-stone-700/60 p-2.5 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
+                                      className="flex items-start gap-2.5 rounded-md bg-white dark:bg-stone-800/70 border border-stone-200/70 dark:border-stone-700/60 p-2 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
                                     >
                                       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-semibold text-xs shrink-0">
                                         {subItem.label}
@@ -411,25 +435,18 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           </div>
                         )}
 
-                        {/* CASE 3: Semicolon List (GS Papers) */}
-                        {parsed.type === 'semicolon_list' && parsed.items && parsed.items.length > 0 && (
+                        {/* Semicolon List (GS Papers) */}
+                        {parsed.type === 'semicolon_list' && parsed.items && (
                           <div className="space-y-2">
                             {parsed.items.map((item, sIdx) => (
                               <div
                                 key={sIdx}
-                                className="flex items-start gap-2.5 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/40 p-2.5 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
+                                className="flex items-start gap-2.5 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 p-2.5 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
                               >
-                                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-stone-400 dark:bg-stone-500 shrink-0" />
+                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-stone-400 dark:bg-stone-500 shrink-0" />
                                 <span className="flex-1 leading-relaxed">{item.text}</span>
                               </div>
                             ))}
-                          </div>
-                        )}
-
-                        {/* CASE 4: Simple Topic */}
-                        {parsed.type === 'simple' && (
-                          <div className="text-xs sm:text-sm leading-relaxed text-stone-700 dark:text-stone-300">
-                            {parsed.title}
                           </div>
                         )}
                       </div>
