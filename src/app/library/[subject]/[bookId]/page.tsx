@@ -39,18 +39,27 @@ export default async function BookDetailPage({ params }: Props) {
         ]}
       />
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {book.chapters.map((chapter) => (
-          <ChapterCard
-            key={chapter.id}
-            id={chapter.id}
-            number={chapter.number}
-            title={chapter.title}
-            bookId={book.id}
-            subjectSlug={subject}
-            pyqCount={chapter.pyqs.length}
-          />
-        ))}
+      <div className="grid gap-3.5 md:grid-cols-2">
+        {book.chapters.map((chapter) => {
+          const hasAnalysis = Boolean(
+            chapter.summary?.startsWith('{') || 
+            (chapter.keyConceptsJson && chapter.keyConceptsJson !== '[]') ||
+            (chapter.definitionsJson && chapter.definitionsJson !== '[]')
+          );
+
+          return (
+            <ChapterCard
+              key={chapter.id}
+              id={chapter.id}
+              number={chapter.number}
+              title={chapter.title}
+              bookId={book.id}
+              subjectSlug={subject}
+              pyqCount={chapter.pyqs.length}
+              hasAnalysis={hasAnalysis}
+            />
+          );
+        })}
       </div>
     </div>
   );
