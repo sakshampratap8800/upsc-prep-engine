@@ -68,7 +68,6 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Parse existing saved data from database
   let savedSummaryObj: SavedSummaryObject | null = null;
   if (chapter.summary) {
     try {
@@ -199,17 +198,44 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           <div className="flex items-center justify-between border-b border-stone-200 bg-stone-50 px-4 py-2.5 text-xs text-stone-600 font-medium">
             <span className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-stone-500" />
-              Full Textbook Viewer (Streaming)
+              In-App PDF Viewer
             </span>
-            <span className="text-[11px] text-stone-400">Class {chapter.book.className} • {chapter.book.title}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-stone-400">Class {chapter.book.className} • {chapter.book.title}</span>
+              <a
+                href={`/api/pdf/${chapter.book.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-blue-600 hover:underline flex items-center gap-1"
+              >
+                Pop-out PDF <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </div>
           </div>
 
-          <div className="flex-1 bg-stone-100 relative">
-            <iframe
-              src={`/api/pdf/${chapter.book.id}`}
-              className="w-full h-full border-none"
-              title={`PDF Reader: ${chapter.title}`}
-            />
+          <div className="flex-1 bg-stone-100 relative w-full h-full">
+            <object
+              data={`/api/pdf/${chapter.book.id}#toolbar=1&navpanes=0`}
+              type="application/pdf"
+              className="w-full h-full"
+            >
+              <iframe
+                src={`/api/pdf/${chapter.book.id}`}
+                className="w-full h-full border-none"
+                title={`PDF Reader: ${chapter.title}`}
+              >
+                <div className="p-6 text-center text-sm text-stone-500">
+                  <p>Your browser could not preview this PDF inline.</p>
+                  <a
+                    href={`/api/pdf/${chapter.book.id}`}
+                    target="_blank"
+                    className="mt-2 inline-block font-semibold text-blue-600 underline"
+                  >
+                    Click here to open the PDF directly
+                  </a>
+                </div>
+              </iframe>
+            </object>
           </div>
         </div>
 
