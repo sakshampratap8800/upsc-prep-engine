@@ -3,6 +3,8 @@ import { SourceTrace } from '@/components/SourceTrace';
 import prisma from '@/lib/db';
 import { notFound } from 'next/navigation';
 import { PYQInteractiveSolver } from '@/components/PYQInteractiveSolver';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -32,6 +34,34 @@ export default async function PYQDetailPage({ params }: Props) {
   const passageText = rawRows?.[0]?.passageText || null;
   const imageUrl = rawRows?.[0]?.imageUrl || pyq.imageUrl || null;
 
+  // Find previous and next question in the exact same examStage, year, and paper
+  const [prevPyq, nextPyq] = await Promise.all([
+    prisma.pYQ.findFirst({
+      where: {
+        year: pyq.year,
+        examStage: pyq.examStage,
+        paper: pyq.paper,
+        ...(pyq.questionNumber !== null
+          ? { questionNumber: { lt: pyq.questionNumber } }
+          : { id: { lt: pyq.id } }),
+      },
+      orderBy: pyq.questionNumber !== null ? { questionNumber: 'desc' } : { id: 'desc' },
+      select: { id: true, questionNumber: true },
+    }),
+    prisma.pYQ.findFirst({
+      where: {
+        year: pyq.year,
+        examStage: pyq.examStage,
+        paper: pyq.paper,
+        ...(pyq.questionNumber !== null
+          ? { questionNumber: { gt: pyq.questionNumber } }
+          : { id: { gt: pyq.id } }),
+      },
+      orderBy: pyq.questionNumber !== null ? { questionNumber: 'asc' } : { id: 'asc' },
+      select: { id: true, questionNumber: true },
+    }),
+  ]);
+
   const options: string[] = pyq.optionsJson ? JSON.parse(pyq.optionsJson) : [];
 
   // Find related PYQs (same subject area or overlapping topics)
@@ -44,6 +74,46 @@ export default async function PYQDetailPage({ params }: Props) {
     });
   }
 
+  const navButtons = (
+    <div className="flex items-center gap-2">
+      {prevPyq ? (
+        <Link
+          href={`/pyq/${prevPyq.id}`}
+          className="inline-flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 shadow-2xs hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>{prevPyq.questionNumber ? `Q.${prevPyq.questionNumber}` : 'Prev'}</span>
+        </Link>
+      ) : (
+        <button
+          disabled
+          className="inline-flex items-center gap-1 rounded-xl border border-stone-200/50 dark:border-stone-800/50 bg-stone-50 dark:bg-stone-900/40 px-3 py-1.5 text-xs font-bold text-stone-300 dark:text-stone-600 cursor-not-allowed"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>Prev</span>
+        </button>
+      )}
+
+      {nextPyq ? (
+        <Link
+          href={`/pyq/${nextPyq.id}`}
+          className="inline-flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 shadow-2xs hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+        >
+          <span>{nextPyq.questionNumber ? `Q.${nextPyq.questionNumber}` : 'Next'}</span>
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      ) : (
+        <button
+          disabled
+          className="inline-flex items-center gap-1 rounded-xl border border-stone-200/50 dark:border-stone-800/50 bg-stone-50 dark:bg-stone-900/40 px-3 py-1.5 text-xs font-bold text-stone-300 dark:text-stone-600 cursor-not-allowed"
+        >
+          <span>Next</span>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div>
       <PageHeader
@@ -53,11 +123,17 @@ export default async function PYQDetailPage({ params }: Props) {
           { label: `${pyq.examStage} ${pyq.year}`, href: `/pyq?stage=${pyq.examStage}&year=${pyq.year}` },
           { label: pyq.paper },
         ]}
+        actions={navButtons}
       />
 
       <div className="space-y-6">
         {/* Source Header */}
-        <SourceTrace type="pyq" exam={pyq.examStage} year={pyq.year} paper={pyq.paper} questionNumber={pyq.questionNumber || undefined} />
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <SourceTrace type="pyq" exam={pyq.examStage} year={pyq.year} paper={pyq.paper} questionNumber={pyq.questionNumber || undefined} />
+          <div className="md:hidden">
+            {navButtons}
+          </div>
+        </div>
 
         {/* Interactive Solver */}
         <PYQInteractiveSolver
@@ -79,6 +155,14 @@ export default async function PYQDetailPage({ params }: Props) {
             passageText: passageText,
           }}
         />
+
+        {/* Bottom Quick Navigation Bar */}
+        <div className="flex items-center justify-between rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-2xs">
+          <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+            {pyq.year} {pyq.examStage} • {pyq.paper}
+          </span>
+          {navButtons}
+        </div>
 
         {/* Syllabus Connection */}
         {pyq.topics.length > 0 && (
