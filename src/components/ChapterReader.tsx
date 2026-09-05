@@ -219,28 +219,11 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           </div>
 
           <div className="flex-1 bg-stone-100 relative w-full h-full">
-            <object
-              data={`/api/pdf/${chapter.book.id}#toolbar=1&navpanes=0`}
-              type="application/pdf"
-              className="w-full h-full"
-            >
-              <iframe
-                src={`/api/pdf/${chapter.book.id}`}
-                className="w-full h-full border-none"
-                title={`PDF Reader: ${chapter.title}`}
-              >
-                <div className="p-6 text-center text-sm text-stone-500">
-                  <p>Your browser could not preview this PDF inline.</p>
-                  <a
-                    href={`/api/pdf/${chapter.book.id}`}
-                    target="_blank"
-                    className="mt-2 inline-block font-semibold text-blue-600 underline"
-                  >
-                    Click here to open the PDF directly
-                  </a>
-                </div>
-              </iframe>
-            </object>
+            <iframe
+              src={`/api/pdf/${chapter.book.id}#toolbar=1&navpanes=0`}
+              className="w-full h-full border-none"
+              title={`PDF Reader: ${chapter.title}`}
+            />
           </div>
         </div>
 
