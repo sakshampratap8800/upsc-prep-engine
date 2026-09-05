@@ -162,17 +162,17 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             {analyzing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
-                Analyzing (Gemini 3.5 Flash)...
+                Analyzing (Gemini 3.8 Flash)...
               </>
             ) : hasSavedNotes ? (
               <>
                 <RotateCcw className="h-3.5 w-3.5 text-stone-300" />
-                Re-Analyze with Gemini 3.5 Flash
+                Re-Analyze with Gemini 3.8 Flash
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4 text-amber-300" />
-                Analyze with Gemini 3.5 Flash
+                Analyze with Gemini 3.8 Flash
               </>
             )}
           </button>
@@ -438,7 +438,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               <Sparkles className="mx-auto h-8 w-8 text-amber-500 mb-2" />
               <h3 className="text-sm font-bold text-stone-800">No UPSC Notes Generated Yet</h3>
               <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-                Click <strong>"Analyze with Gemini 3.5 Flash"</strong> above to extract deep Prelims takeaways, exact definitions & differences, Case Studies, Mains dimensions, and Atlas Map locations.
+                Click <strong>"Analyze with Gemini 3.8 Flash"</strong> above to extract deep Prelims takeaways, exact definitions & differences, Case Studies, Mains dimensions, and Atlas Map locations.
               </p>
             </div>
           )}

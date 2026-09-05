@@ -46,7 +46,10 @@ Return ONLY a valid JSON object matching this schema:
     "4-6 exhaustive, conceptual and factual bullet points containing the COMPLETE explanation, specific definitions, and Prelims trap warnings"
   ],
   "mainsAngles": [
-    "2-4 analytical questions with structured answer frameworks, keywords, and constitutional/policy linkages"
+    {
+      "question": "Mains analytical question",
+      "framework": "Structured answer framework with introduction, arguments, case studies, and constitutional/policy linkages"
+    }
   ],
   "caseStudiesAndData": [
     "2-3 specific NCERT case studies, statistical tables, or real-world examples cited in the chapter"
@@ -71,12 +74,21 @@ Return ONLY a valid JSON object matching this schema:
 - Chapter ${chapter.number}: ${chapter.title}
 - Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
 
-    // Try primary high-intelligence models with automatic fallback
-    const modelsToTry = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
-    let parsedData = null;
-    let lastError = null;
+    // Priority Order: Most advanced Gemini flagship models first -> Groq LLaMA 3.3 70B fallback -> Flash Lite
+    const geminiModels = [
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite'
+    ];
 
-    for (const modelName of modelsToTry) {
+    let parsedData = null;
+    let modelUsed = '';
+
+    // 1. Try Gemini Models in descending intelligence order
+    for (const modelName of geminiModels) {
       try {
         const model = genAI.getGenerativeModel({
           model: modelName,
@@ -90,15 +102,47 @@ Return ONLY a valid JSON object matching this schema:
         const aiRes = await model.generateContent(userPrompt);
         const jsonText = aiRes.response.text();
         parsedData = JSON.parse(jsonText);
-        break; // Success!
+        modelUsed = modelName;
+        console.log(`Successfully generated chapter analysis with ${modelName}`);
+        break;
       } catch (err) {
-        lastError = err;
-        console.warn(`Model ${modelName} failed or rate-limited, trying next fallback...`, err);
+        console.warn(`Gemini model ${modelName} unavailable/rate-limited, falling back...`);
+      }
+    }
+
+    // 2. Fallback to Groq (LLaMA 3.3 70B Versatile) if Gemini runs into quota
+    if (!parsedData && process.env.GROQ_API_KEY) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.2,
+          }),
+        });
+        const groqJson = await groqRes.json();
+        const content = groqJson.choices?.[0]?.message?.content;
+        if (content) {
+          parsedData = JSON.parse(content);
+          modelUsed = 'Groq LLaMA 3.3 70B';
+          console.log('Successfully generated chapter analysis with Groq LLaMA 3.3 70B');
+        }
+      } catch (groqErr) {
+        console.error('Groq fallback error:', groqErr);
       }
     }
 
     if (!parsedData) {
-      throw lastError || new Error('Failed to generate analysis across all models');
+      throw new Error('Failed to generate analysis across all Gemini and Groq models');
     }
 
     // Save permanently in the database under this chapter's record
@@ -111,14 +155,15 @@ Return ONLY a valid JSON object matching this schema:
           caseStudiesAndData: parsedData.caseStudiesAndData || [],
           mapWork: parsedData.mapWork || [],
           diagramsToDraw: parsedData.diagramsToDraw || [],
-          relevance: parsedData.relevance || 'GS / Prelims'
+          relevance: parsedData.relevance || 'GS / Prelims',
+          modelUsed: modelUsed
         }),
         definitionsJson: JSON.stringify(parsedData.keyDefinitions || []),
         keyConceptsJson: JSON.stringify(parsedData.prelimsFocus || []),
       }
     });
 
-    return NextResponse.json({ success: true, data: parsedData });
+    return NextResponse.json({ success: true, data: { ...parsedData, modelUsed } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error generating UPSC summary';
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
