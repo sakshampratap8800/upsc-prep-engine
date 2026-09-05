@@ -12,7 +12,9 @@ import {
   MapPin,
   PenTool,
   BookmarkCheck,
-  RotateCcw
+  RotateCcw,
+  Layers,
+  FileSpreadsheet
 } from 'lucide-react';
 import { RelevanceBadge } from '@/components/RelevanceBadge';
 import { PYQCard } from '@/components/PYQCard';
@@ -54,6 +56,7 @@ interface ChapterReaderProps {
 interface SavedSummaryObject {
   highYieldSummary?: string[];
   mainsAngles?: string[];
+  caseStudiesAndData?: string[];
   mapWork?: string[];
   diagramsToDraw?: string[];
   relevance?: string;
@@ -104,6 +107,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
       setAiData({
         highYieldSummary: data.data.highYieldSummary || [],
         mainsAngles: data.data.mainsAngles || [],
+        caseStudiesAndData: data.data.caseStudiesAndData || [],
         mapWork: data.data.mapWork || [],
         diagramsToDraw: data.data.diagramsToDraw || [],
         relevance: data.data.relevance || 'GS / Prelims',
@@ -154,17 +158,17 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             {analyzing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
-                Analyzing & Saving to DB...
+                Analyzing (Gemini 3.5 Flash)...
               </>
             ) : hasSavedNotes ? (
               <>
                 <RotateCcw className="h-3.5 w-3.5 text-stone-300" />
-                Re-Analyze with Gemini
+                Re-Analyze with Gemini 3.5 Flash
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4 text-amber-300" />
-                Analyze with Gemini
+                Analyze with Gemini 3.5 Flash
               </>
             )}
           </button>
@@ -191,7 +195,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Inbuilt Full Book Viewer */}
-        <div className="lg:col-span-7 flex flex-col rounded-xl border border-stone-200 bg-white overflow-hidden shadow-sm h-[820px]">
+        <div className="lg:col-span-7 flex flex-col rounded-xl border border-stone-200 bg-white overflow-hidden shadow-sm h-[860px]">
           <div className="flex items-center justify-between border-b border-stone-200 bg-stone-50 px-4 py-2.5 text-xs text-stone-600 font-medium">
             <span className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-stone-500" />
@@ -209,8 +213,8 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           </div>
         </div>
 
-        {/* Right: UPSC Exam Cards (Prelims, Mains, Definitions, Map Work, Diagrams) */}
-        <div className="lg:col-span-5 space-y-5 h-[820px] overflow-y-auto pr-1">
+        {/* Right: UPSC Exam Cards */}
+        <div className="lg:col-span-5 space-y-4 h-[860px] overflow-y-auto pr-1">
           {/* AI UPSC Synthesis Card */}
           {aiData && (
             <div className="space-y-4">
@@ -238,11 +242,27 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                 </section>
               )}
 
-              {/* Mains Analytical Angles */}
+              {/* Specific Case Studies & Statistical Tables */}
+              {aiData.caseStudiesAndData && aiData.caseStudiesAndData.length > 0 && (
+                <section className="rounded-xl border border-rose-200 bg-rose-50/40 p-5 shadow-sm">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-rose-900 flex items-center gap-1.5">
+                    <FileSpreadsheet className="h-4 w-4 text-rose-600" /> NCERT Data Tables & Real-World Case Studies
+                  </h2>
+                  <ul className="mt-2.5 space-y-2">
+                    {aiData.caseStudiesAndData.map((item, idx) => (
+                      <li key={idx} className="rounded-lg bg-white border border-rose-100 p-2.5 text-xs text-stone-800 leading-relaxed">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* Mains Analytical Dimensions */}
               {aiData.mainsAngles && aiData.mainsAngles.length > 0 && (
                 <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
                   <h2 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
-                    <ChevronRight className="h-4 w-4 text-indigo-600" /> Mains Analytical Dimensions
+                    <ChevronRight className="h-4 w-4 text-indigo-600" /> Mains Analytical Dimensions & Frameworks
                   </h2>
                   <ul className="mt-3 space-y-2">
                     {aiData.mainsAngles.map((angle, idx) => (
@@ -293,15 +313,16 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             </div>
           )}
 
-          {/* Prelims Focus / Key Concepts */}
+          {/* Prelims Focus / Comprehensive Concepts */}
           {keyConcepts.length > 0 && (
             <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500">Prelims Focus Points</h2>
-              <ul className="mt-3 space-y-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-blue-600" /> Prelims High-Yield Explanations & Traps
+              </h2>
+              <ul className="mt-3 space-y-2.5">
                 {keyConcepts.map((concept, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-stone-700 leading-relaxed">
-                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
-                    <span>{concept}</span>
+                  <li key={i} className="rounded-lg bg-stone-50 border border-stone-100 p-2.5 text-xs text-stone-800 leading-relaxed">
+                    {concept}
                   </li>
                 ))}
               </ul>
@@ -311,7 +332,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           {/* Essential Definitions */}
           {definitions.length > 0 && (
             <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500">Essential Definitions</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500">Essential Definitions & Formulas</h2>
               <dl className="mt-3 space-y-2.5">
                 {definitions.map((def, i) => (
                   <div key={i} className="rounded-lg bg-stone-50 p-2.5 border border-stone-100">
@@ -387,7 +408,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               <Sparkles className="mx-auto h-8 w-8 text-amber-500 mb-2" />
               <h3 className="text-sm font-bold text-stone-800">No UPSC Notes Generated Yet</h3>
               <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-                Click <strong>"Analyze with Gemini"</strong> above to extract Prelims takeaways, Mains angles, Atlas map locations, and definitions. They will be saved to this chapter card permanently.
+                Click <strong>"Analyze with Gemini 3.5 Flash"</strong> above to extract deep Prelims takeaways, exact definitions & differences, Case Studies, Mains dimensions, and Atlas Map locations.
               </p>
             </div>
           )}
