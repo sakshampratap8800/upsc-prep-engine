@@ -57,17 +57,21 @@ export async function POST(req: NextRequest) {
 
     const publicUrl = `/pyq-images/${fileName}`;
 
-    // Update database
-    const updated = await prisma.pYQ.update({
-      where: { id: pyqId },
-      data: { imageUrl: publicUrl },
-    });
+    // Update database (use raw SQL update for 100% resilience across all client versions)
+    try {
+      await prisma.$executeRawUnsafe(`UPDATE pyqs SET imageUrl = ? WHERE id = ?`, publicUrl, pyqId);
+    } catch (dbErr) {
+      console.warn('executeRaw failed, falling back to prisma.pYQ.update:', dbErr);
+      await prisma.pYQ.update({
+        where: { id: pyqId },
+        data: { imageUrl: publicUrl } as any,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       imageUrl: publicUrl,
       fileName,
-      pyq: updated,
     });
   } catch (error: any) {
     console.error('Error uploading PYQ image:', error);
