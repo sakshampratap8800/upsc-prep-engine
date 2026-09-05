@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { 
   Search, 
@@ -11,7 +11,8 @@ import {
   Loader2, 
   Sparkles,
   ArrowRight,
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -55,19 +56,56 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'chapters' | 'pyqs' | 'topics' | 'tasks'>('all');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearch = async (searchQuery?: string) => {
-    const q = (searchQuery !== undefined ? searchQuery : query).trim();
-    if (!q) return;
+  const performSearch = async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      setResults(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`);
       const data = await res.json();
       setResults(data);
     } catch {
       setResults(null);
     }
     setLoading(false);
+  };
+
+  // Search-as-you-type with 280ms debounce
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (!query.trim()) {
+      setResults(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    debounceTimerRef.current = setTimeout(() => {
+      performSearch(query);
+    }, 280);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [query]);
+
+  const handleSearch = (searchQuery?: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    const q = searchQuery !== undefined ? searchQuery : query;
+    performSearch(q);
   };
 
   const quickPills = [
@@ -105,9 +143,21 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search concepts, NCERT terms, questions, or syllabus modules..."
-              className="w-full rounded-xl border border-stone-300 bg-white pl-10 pr-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none shadow-sm transition"
+              placeholder="Search concepts, NCERT terms, questions, or syllabus modules (live as you type)..."
+              className="w-full rounded-xl border border-stone-300 bg-white pl-10 pr-10 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none shadow-sm transition"
             />
+            {query && (
+              <button
+                onClick={() => {
+                  setQuery('');
+                  setResults(null);
+                }}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition cursor-pointer"
+                title="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => handleSearch()}
