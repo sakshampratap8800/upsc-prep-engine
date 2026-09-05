@@ -25,9 +25,9 @@ export function PYQCard({
 }: PYQCardProps) {
   return (
     <Link href={`/pyq/${id}`} className="block">
-      <div className="rounded-lg border border-stone-200 bg-white p-4 transition-colors hover:border-stone-300 hover:bg-stone-50">
-        <div className="flex items-center gap-2 text-xs text-stone-500">
-          <span className="font-semibold text-stone-700">{year}</span>
+      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 transition-colors hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-850 shadow-xs">
+        <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+          <span className="font-semibold text-stone-700 dark:text-stone-200">{year}</span>
           <span>•</span>
           <span>{examStage}</span>
           <span>•</span>
@@ -39,12 +39,12 @@ export function PYQCard({
             </>
           )}
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-stone-800 whitespace-pre-line line-clamp-4">
+        <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200 whitespace-pre-line line-clamp-4">
           {questionText}
         </p>
         <div className="mt-3 flex items-center gap-2">
           {subjectArea && (
-            <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+            <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">
               {subjectArea}
             </span>
           )}

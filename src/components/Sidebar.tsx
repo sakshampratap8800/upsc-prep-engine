@@ -45,22 +45,22 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative flex h-full flex-col border-r border-stone-200 bg-white transition-all duration-300 ease-in-out shrink-0 ${
+      className={`relative flex h-full flex-col border-r border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 transition-all duration-300 ease-in-out shrink-0 ${
         isOpen ? 'w-64' : 'w-0 border-r-0 overflow-hidden'
       }`}
     >
       {/* Header with Title & Collapse */}
-      <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 min-w-[16rem]">
+      <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 px-5 py-4 min-w-[16rem]">
         <div className="truncate">
-          <h1 className="text-base font-bold tracking-tight text-stone-900">
+          <h1 className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
             UPSC Prep Engine
           </h1>
-          <p className="text-[11px] text-stone-500">Personal Study System</p>
+          <p className="text-[11px] text-stone-500 dark:text-stone-400">Personal Study System</p>
         </div>
         <button
           onClick={toggle}
           title="Collapse sidebar"
-          className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition cursor-pointer"
+          className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200 transition cursor-pointer"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -81,8 +81,8 @@ export function Sidebar() {
                   href={item.href}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900'
+                      : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-200'
                   }`}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
@@ -95,9 +95,9 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-stone-200 px-5 py-3 min-w-[16rem]">
-        <p className="text-xs font-semibold text-stone-700">UPSC CSE 2027</p>
-        <p className="text-[11px] text-stone-400">Master Study System</p>
+      <div className="border-t border-stone-200 dark:border-stone-800 px-5 py-3 min-w-[16rem]">
+        <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">UPSC CSE 2027</p>
+        <p className="text-[11px] text-stone-400 dark:text-stone-500">Master Study System</p>
       </div>
     </aside>
   );
