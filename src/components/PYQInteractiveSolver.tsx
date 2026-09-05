@@ -115,6 +115,44 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
     };
   }, [isEditMode, pyq.id]);
 
+  const [gdriveInputUrl, setGdriveInputUrl] = useState('');
+  const [savingGdriveUrl, setSavingGdriveUrl] = useState(false);
+
+  // Helper to convert Google Drive sharing link to direct view image URL
+  const formatGoogleDriveUrl = (url: string): string => {
+    const trimmed = url.trim();
+    // Matches file/d/<FILE_ID>/ or id=<FILE_ID>
+    const idMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
+    }
+    return trimmed;
+  };
+
+  const handleSaveGdriveUrl = async () => {
+    if (!gdriveInputUrl.trim()) return;
+    setSavingGdriveUrl(true);
+    const directUrl = formatGoogleDriveUrl(gdriveInputUrl);
+    try {
+      const res = await fetch('/api/pyq/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pyq.id, imageUrl: directUrl }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPyq((prev) => ({ ...prev, imageUrl: directUrl }));
+        setGdriveInputUrl('');
+      } else {
+        alert('Failed to save link: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e: any) {
+      console.error('Failed to save Google Drive link:', e);
+      alert('Error: ' + e.message);
+    }
+    setSavingGdriveUrl(false);
+  };
+
   const uploadImageFile = async (file: File | Blob) => {
     setUploadingImage(true);
     try {
@@ -404,7 +442,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
         {/* UPLOAD / PASTE DIAGRAM ZONE (Visible when Edit Mode is ON) */}
         {isEditMode && (
-          <div className="my-5 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 p-5 text-center">
+          <div className="my-5 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 p-5 space-y-4">
             <input
               type="file"
               ref={fileInputRef}
@@ -415,24 +453,55 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                 if (file) uploadImageFile(file);
               }}
             />
-            <div className="flex flex-col items-center justify-center gap-2">
+            
+            <div className="flex flex-col items-center justify-center text-center gap-2">
               <ImageIcon className="h-7 w-7 text-amber-600 dark:text-amber-400" />
               <div className="text-xs sm:text-sm text-stone-700 dark:text-stone-300">
                 <span className="font-bold text-amber-800 dark:text-amber-300">
                   {pyq.imageUrl ? 'Replace Screenshot / Diagram' : 'Attach Screenshot / Diagram'}
                 </span>
                 <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
-                  Click below to choose file, OR take a screenshot (<code>Win + Shift + S</code>) and press <kbd className="rounded bg-stone-200 dark:bg-stone-800 px-1 font-mono">Ctrl + V</kbd> to paste!
+                  Paste screenshot (<kbd className="rounded bg-stone-200 dark:bg-stone-800 px-1 font-mono">Ctrl + V</kbd>), upload file, or paste a Google Drive link!
                 </p>
               </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="mt-1 flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-3.5 py-1.5 text-xs font-bold transition cursor-pointer shadow-xs"
-              >
-                {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                <span>{uploadingImage ? 'Uploading...' : 'Choose Image File'}</span>
-              </button>
+
+              <div className="flex items-center gap-2 flex-wrap justify-center mt-1">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-3.5 py-1.5 text-xs font-bold transition cursor-pointer shadow-xs"
+                >
+                  {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  <span>{uploadingImage ? 'Uploading...' : 'Choose Local File'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Google Drive Link Paste Bar */}
+            <div className="pt-3 border-t border-amber-200/80 dark:border-amber-800/60 max-w-xl mx-auto">
+              <label className="block text-[11px] font-bold text-amber-900 dark:text-amber-300 mb-1">
+                🔗 Or Paste Google Drive Image Link:
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/..."
+                  value={gdriveInputUrl}
+                  onChange={(e) => setGdriveInputUrl(e.target.value)}
+                  className="flex-1 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                />
+                <button
+                  onClick={handleSaveGdriveUrl}
+                  disabled={savingGdriveUrl || !gdriveInputUrl.trim()}
+                  className="flex items-center gap-1 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3.5 py-1.5 text-xs font-bold disabled:opacity-40 transition cursor-pointer shrink-0"
+                >
+                  {savingGdriveUrl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  <span>Save Link</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
+                Make sure the image in your Google Drive has "Anyone with the link can view" permission.
+              </p>
             </div>
           </div>
         )}
