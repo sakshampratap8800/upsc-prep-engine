@@ -97,7 +97,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-stone-200 px-5 py-3 min-w-[16rem]">
         <p className="text-xs font-semibold text-stone-700">UPSC CSE 2027</p>
-        <p className="text-[11px] text-stone-400">Optional: Sociology</p>
+        <p className="text-[11px] text-stone-400">Master Study System</p>
       </div>
     </aside>
   );

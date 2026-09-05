@@ -2,25 +2,66 @@
 
 import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { Search, BookOpen, FileQuestion, GraduationCap } from 'lucide-react';
+import { 
+  Search, 
+  BookOpen, 
+  FileQuestion, 
+  GraduationCap, 
+  Calendar, 
+  Loader2, 
+  Sparkles,
+  ArrowRight,
+  Filter
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface SearchResults {
-  chapters: Array<{ id: number; number: number; title: string; book: { id: number; title: string; subject: { slug: string } } }>;
-  pyqs: Array<{ id: number; year: number; examStage: string; paper: string; questionText: string }>;
-  topics: Array<{ id: number; name: string; paper: string }>;
+  chapters: Array<{
+    id: number;
+    number: number;
+    title: string;
+    book: {
+      id: number;
+      title: string;
+      className: number;
+      subject: { name: string; slug: string };
+    };
+  }>;
+  pyqs: Array<{
+    id: number;
+    year: number;
+    examStage: string;
+    paper: string;
+    questionNumber: number | null;
+    questionText: string;
+    subjectArea: string | null;
+    difficulty: string | null;
+  }>;
+  topics: Array<{ id: number; name: string; paper: string; description: string | null }>;
+  tasks: Array<{
+    id: number;
+    title: string;
+    phase: string | null;
+    timeAllocation: string | null;
+    monthNumber: number | null;
+    weekNumber: number | null;
+    dayOfWeek: string | null;
+    status: string;
+  }>;
 }
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'chapters' | 'pyqs' | 'topics' | 'tasks'>('all');
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const handleSearch = async (searchQuery?: string) => {
+    const q = (searchQuery !== undefined ? searchQuery : query).trim();
+    if (!q) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       setResults(data);
     } catch {
@@ -29,92 +70,229 @@ export default function SearchPage() {
     setLoading(false);
   };
 
+  const quickPills = [
+    'Drainage',
+    'Inflation',
+    'Fundamental Rights',
+    'Indus Valley',
+    'Monsoon',
+    'HDI',
+    'Judiciary',
+    'Biodiversity'
+  ];
+
+  const totalResults = results
+    ? (results.chapters?.length || 0) +
+      (results.pyqs?.length || 0) +
+      (results.topics?.length || 0) +
+      (results.tasks?.length || 0)
+    : 0;
+
   return (
-    <div>
+    <div className="space-y-6 max-w-5xl mx-auto">
       <PageHeader
-        title="Search"
-        description="Search across chapters, PYQs, syllabus topics, and concepts"
+        title="Global Search"
+        description="Search across 252 textbook chapters, 3,032 PYQs, UPSC syllabus topics, and timetable tasks in real-time."
       />
 
-      <div className="flex gap-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          placeholder="Search for topics, concepts, questions..."
-          className="flex-1 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
-        />
-        <button
-          onClick={handleSearch}
-          disabled={loading}
-          className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800"
-        >
-          <Search className="h-4 w-4" />
-          Search
-        </button>
+      {/* Search Input Box */}
+      <div className="space-y-3">
+        <div className="flex gap-2.5">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search concepts, NCERT terms, questions, or syllabus modules..."
+              className="w-full rounded-xl border border-stone-300 bg-white pl-10 pr-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none shadow-sm transition"
+            />
+          </div>
+          <button
+            onClick={() => handleSearch()}
+            disabled={loading || !query.trim()}
+            className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition cursor-pointer shadow-sm"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            Search
+          </button>
+        </div>
+
+        {/* Quick Search Chips */}
+        <div className="flex items-center gap-2 flex-wrap text-xs text-stone-500">
+          <span className="font-medium text-stone-400">Quick Searches:</span>
+          {quickPills.map((pill) => (
+            <button
+              key={pill}
+              onClick={() => {
+                setQuery(pill);
+                handleSearch(pill);
+              }}
+              className="rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-stone-700 hover:bg-stone-100 hover:border-stone-300 transition cursor-pointer"
+            >
+              {pill}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Results Section */}
       {results && (
-        <div className="mt-8 space-y-8">
-          {/* Chapters */}
-          {results.chapters.length > 0 && (
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-stone-900">
-                <BookOpen className="h-5 w-5" /> Chapters ({results.chapters.length})
+        <div className="space-y-6 pt-4">
+          {/* Result Filter Tabs */}
+          <div className="flex items-center justify-between border-b border-stone-200 pb-3 flex-wrap gap-2">
+            <p className="text-sm font-semibold text-stone-700">
+              Found {totalResults} matches
+            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'all', label: `All (${totalResults})` },
+                { id: 'chapters', label: `Chapters (${results.chapters.length})` },
+                { id: 'pyqs', label: `PYQs (${results.pyqs.length})` },
+                { id: 'topics', label: `Syllabus (${results.topics.length})` },
+                { id: 'tasks', label: `Timetable (${results.tasks.length})` },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveFilter(tab.id as any)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    activeFilter === tab.id
+                      ? 'bg-stone-900 text-white'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 1. Chapters Results */}
+          {(activeFilter === 'all' || activeFilter === 'chapters') && results.chapters.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-500">
+                <BookOpen className="h-4 w-4 text-blue-600" /> Textbook Chapters ({results.chapters.length})
               </h2>
-              <div className="space-y-2">
+              <div className="grid gap-2.5 md:grid-cols-2">
                 {results.chapters.map((ch) => (
-                  <Link key={ch.id} href={`/library/${ch.book.subject.slug}/${ch.book.id}/${ch.id}`}
-                    className="block rounded-lg border border-stone-200 bg-white p-4 hover:bg-stone-50 transition-colors">
-                    <p className="text-sm font-medium text-stone-800">Ch.{ch.number}: {ch.title}</p>
-                    <p className="mt-0.5 text-xs text-stone-500">{ch.book.title}</p>
+                  <Link
+                    key={ch.id}
+                    href={`/library/${ch.book.subject.slug}/${ch.book.id}/${ch.id}`}
+                    className="group flex items-start justify-between rounded-xl border border-stone-200 bg-white p-4 hover:border-stone-400 hover:shadow-xs transition"
+                  >
+                    <div>
+                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                        {ch.book.subject.name} • Class {ch.book.className}
+                      </span>
+                      <h3 className="mt-1.5 text-sm font-bold text-stone-900 group-hover:text-blue-600 transition-colors">
+                        Ch.{ch.number}: {ch.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-stone-500">{ch.book.title}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-stone-300 group-hover:text-stone-700 group-hover:translate-x-0.5 transition shrink-0 mt-2" />
                   </Link>
                 ))}
               </div>
             </section>
           )}
 
-          {/* PYQs */}
-          {results.pyqs.length > 0 && (
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-stone-900">
-                <FileQuestion className="h-5 w-5" /> PYQs ({results.pyqs.length})
+          {/* 2. PYQ Results */}
+          {(activeFilter === 'all' || activeFilter === 'pyqs') && results.pyqs.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-500">
+                <FileQuestion className="h-4 w-4 text-amber-600" /> Previous Year Questions ({results.pyqs.length})
+              </h2>
+              <div className="space-y-2.5">
+                {results.pyqs.map((pyq) => (
+                  <Link
+                    key={pyq.id}
+                    href={`/pyq/${pyq.id}`}
+                    className="block rounded-xl border border-stone-200 bg-white p-4 hover:border-stone-400 hover:shadow-xs transition"
+                  >
+                    <div className="flex items-center gap-2 text-xs text-stone-500 flex-wrap">
+                      <span className="font-bold text-stone-900 bg-stone-100 px-2 py-0.5 rounded">{pyq.year}</span>
+                      <span>•</span>
+                      <span className="font-medium text-stone-700">{pyq.examStage}</span>
+                      <span>•</span>
+                      <span>{pyq.paper}</span>
+                      {pyq.questionNumber && <span>• Q.{pyq.questionNumber}</span>}
+                      {pyq.subjectArea && (
+                        <span className="ml-auto rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 border border-amber-200">
+                          {pyq.subjectArea}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm text-stone-800 leading-relaxed line-clamp-3">
+                      {pyq.questionText}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 3. Syllabus Topics Results */}
+          {(activeFilter === 'all' || activeFilter === 'topics') && results.topics.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-500">
+                <GraduationCap className="h-4 w-4 text-indigo-600" /> UPSC Syllabus Topics ({results.topics.length})
+              </h2>
+              <div className="grid gap-2.5 md:grid-cols-2">
+                {results.topics.map((t) => (
+                  <div
+                    key={t.id}
+                    className="rounded-xl border border-stone-200 bg-white p-4 space-y-1"
+                  >
+                    <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 border border-indigo-100">
+                      {t.paper}
+                    </span>
+                    <h3 className="text-sm font-semibold text-stone-900">{t.name}</h3>
+                    {t.description && (
+                      <p className="text-xs text-stone-500 line-clamp-2">{t.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 4. Timetable Tasks */}
+          {(activeFilter === 'all' || activeFilter === 'tasks') && results.tasks.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-500">
+                <Calendar className="h-4 w-4 text-emerald-600" /> Timetable Tasks ({results.tasks.length})
               </h2>
               <div className="space-y-2">
-                {results.pyqs.map((pyq) => (
-                  <Link key={pyq.id} href={`/pyq/${pyq.id}`}
-                    className="block rounded-lg border border-stone-200 bg-white p-4 hover:bg-stone-50 transition-colors">
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                      <span className="font-semibold text-stone-700">{pyq.year}</span>
-                      <span>\u2022</span><span>{pyq.examStage}</span>
-                      <span>\u2022</span><span>{pyq.paper}</span>
+                {results.tasks.map((task) => (
+                  <Link
+                    key={task.id}
+                    href="/timetable"
+                    className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3.5 hover:bg-stone-50 transition"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-stone-500">
+                        Month {task.monthNumber || 1} • Week {task.weekNumber || 1} • {task.dayOfWeek || 'Scheduled'}
+                      </p>
+                      <h4 className="text-sm font-bold text-stone-900 mt-0.5">{task.title}</h4>
                     </div>
-                    <p className="mt-1 text-sm text-stone-700 line-clamp-2">{pyq.questionText}</p>
+                    <span className="text-xs font-medium text-stone-600 bg-stone-100 px-2.5 py-1 rounded-lg shrink-0">
+                      {task.timeAllocation || 'Daily Task'}
+                    </span>
                   </Link>
                 ))}
               </div>
             </section>
           )}
 
-          {/* Syllabus Topics */}
-          {results.topics.length > 0 && (
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-stone-900">
-                <GraduationCap className="h-5 w-5" /> Syllabus Topics ({results.topics.length})
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {results.topics.map((t) => (
-                  <span key={t.id} className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700">
-                    {t.name} ({t.paper})
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {results.chapters.length === 0 && results.pyqs.length === 0 && results.topics.length === 0 && (
-            <p className="text-sm text-stone-500">No results found for "{query}"</p>
+          {totalResults === 0 && (
+            <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-white p-12 text-center">
+              <Search className="mx-auto h-10 w-10 text-stone-300 mb-2" />
+              <h3 className="text-base font-bold text-stone-800">No results found</h3>
+              <p className="text-xs text-stone-500 mt-1">
+                We couldn't find any chapters, questions, or syllabus topics matching "{query}".
+              </p>
+            </div>
           )}
         </div>
       )}
