@@ -716,7 +716,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                   <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${badgeStyle}`}>
                     {optionLetter}
                   </span>
-                  <span className="text-sm leading-relaxed flex-1">{opt}</span>
+                  <span className="text-sm leading-relaxed flex-1 font-mono sm:font-sans">
+                    {opt.replace(/^\s*(?:\([a-dA-D1-4]\)|[a-dA-D1-4]\.|\([iIvVxX]+\))\s*/, '')}
+                  </span>
                   {result && (
                     result.correctAnswer?.toUpperCase().includes(optionLetter) ? (
                       <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
