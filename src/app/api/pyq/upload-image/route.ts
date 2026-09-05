@@ -59,8 +59,35 @@ export async function POST(req: NextRequest) {
     const publicUrl = `/pyq-images/${fileName}`;
 
     // Update database (use raw SQL update for 100% resilience across all client versions)
+    const rangeStartStr = formData.get('rangeStart') as string | null;
+    const rangeEndStr = formData.get('rangeEnd') as string | null;
+
     try {
       await prisma.$executeRawUnsafe(`UPDATE pyqs SET imageUrl = ? WHERE id = ?`, publicUrl, pyqId);
+
+      // If range is specified, apply to all questions in the exact same year, stage, and paper
+      if (rangeStartStr && rangeEndStr) {
+        const startQ = Math.min(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
+        const endQ = Math.max(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
+        
+        if (!isNaN(startQ) && !isNaN(endQ)) {
+          await prisma.$executeRawUnsafe(
+            `UPDATE pyqs 
+             SET imageUrl = ? 
+             WHERE year = ? 
+               AND examStage = ? 
+               AND paper = ? 
+               AND questionNumber >= ? 
+               AND questionNumber <= ?`,
+            publicUrl,
+            pyq.year,
+            pyq.examStage,
+            pyq.paper,
+            startQ,
+            endQ
+          );
+        }
+      }
     } catch (dbErr) {
       console.warn('executeRaw failed, falling back to prisma.pYQ.update:', dbErr);
       await prisma.pYQ.update({

@@ -87,6 +87,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
   // Image Upload States
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [applyImageToRange, setApplyImageToRange] = useState(false);
+  const [imageRangeStart, setImageRangeStart] = useState<number>(pyq.questionNumber || 1);
+  const [imageRangeEnd, setImageRangeEnd] = useState<number>(pyq.questionNumber || 1);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -122,7 +125,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
         card.removeEventListener('paste', handlePaste as any);
       }
     };
-  }, [isEditMode, pyq.id]);
+  }, [isEditMode, pyq.id, applyImageToRange, imageRangeStart, imageRangeEnd]);
 
   const [gdriveInputUrl, setGdriveInputUrl] = useState('');
   const [savingGdriveUrl, setSavingGdriveUrl] = useState(false);
@@ -171,7 +174,12 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
       formData.append('file', file, fileName);
       formData.append('pyqId', String(pyq.id));
 
-      console.log('Uploading diagram for PYQ ID:', pyq.id, 'File:', fileName, 'Type:', file.type);
+      if (applyImageToRange) {
+        formData.append('rangeStart', String(imageRangeStart));
+        formData.append('rangeEnd', String(imageRangeEnd));
+      }
+
+      console.log('Uploading diagram for PYQ ID:', pyq.id, 'File:', fileName, 'Type:', file.type, 'Range:', applyImageToRange ? `${imageRangeStart}-${imageRangeEnd}` : 'Single');
 
       const res = await fetch('/api/pyq/upload-image', {
         method: 'POST',
@@ -548,7 +556,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
         {/* UPLOAD / PASTE DIAGRAM ZONE (Visible when Edit Mode is ON) */}
         {isEditMode && (
-          <div className="my-5 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 p-5 text-center">
+          <div className="my-5 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 p-5 space-y-3 text-center">
             <input
               type="file"
               ref={fileInputRef}
@@ -567,8 +575,47 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                   {pyq.imageUrl ? 'Replace Question Diagram' : 'Upload Question Diagram'}
                 </p>
                 <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                  Click below to choose file or press <kbd className="rounded bg-stone-200 dark:bg-stone-800 px-1 font-mono">Ctrl + V</kbd> to paste screenshot. It automatically renames and saves to your images folder.
+                  Click below to choose file or press <kbd className="rounded bg-stone-200 dark:bg-stone-800 px-1 font-mono">Ctrl + V</kbd> to paste screenshot.
                 </p>
+              </div>
+
+              {/* Range apply checkbox for shared diagrams */}
+              <div className="mt-1 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-3 max-w-lg w-full flex flex-col items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-stone-800 dark:text-stone-200">
+                  <input
+                    type="checkbox"
+                    checked={applyImageToRange}
+                    onChange={(e) => setApplyImageToRange(e.target.checked)}
+                    className="h-4 w-4 rounded accent-amber-600"
+                  />
+                  <span>Apply this diagram to multiple questions in this same paper?</span>
+                </label>
+
+                {applyImageToRange && (
+                  <div className="flex items-center gap-2 text-xs flex-wrap justify-center">
+                    <span className="text-stone-600 dark:text-stone-400 font-medium">From Q.</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={150}
+                      value={imageRangeStart}
+                      onChange={(e) => setImageRangeStart(parseInt(e.target.value, 10) || 1)}
+                      className="w-14 rounded border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-2 py-1 font-bold text-stone-900 dark:text-stone-100 text-center"
+                    />
+                    <span className="text-stone-600 dark:text-stone-400 font-medium">to Q.</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={150}
+                      value={imageRangeEnd}
+                      onChange={(e) => setImageRangeEnd(parseInt(e.target.value, 10) || 1)}
+                      className="w-14 rounded border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-2 py-1 font-bold text-stone-900 dark:text-stone-100 text-center"
+                    />
+                    <span className="text-[11px] text-amber-800 dark:text-amber-400 font-medium">
+                      ({pyq.year} {pyq.examStage} {pyq.paper} only)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -577,7 +624,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                 className="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 text-xs font-bold transition cursor-pointer shadow-xs"
               >
                 {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                <span>{uploadingImage ? 'Uploading & Saving...' : 'Upload Image'}</span>
+                <span>{uploadingImage ? 'Uploading & Linking...' : 'Upload Image'}</span>
               </button>
             </div>
           </div>
