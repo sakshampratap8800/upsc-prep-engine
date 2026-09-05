@@ -48,17 +48,42 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
     attemptId?: number | null;
   } | null>(null);
 
+  const [aiBreakdownLoading, setAiBreakdownLoading] = useState(false);
+  const [aiBreakdown, setAiBreakdown] = useState<{
+    explanation: string | null;
+    optionBreakdown: Record<string, string>;
+    eliminationTrick?: string | null;
+  } | null>(null);
+
   const [loggingError, setLoggingError] = useState(false);
   const [errorLogged, setErrorLogged] = useState(false);
   const [selectedErrorType, setSelectedErrorType] = useState<string>('confused_concepts');
 
   const isMCQ = pyq.options && pyq.options.length > 0;
 
-  const handleEvaluate = async (optionChoice?: string) => {
-    const ans = optionChoice || selectedOption || textAnswer;
-    if (!ans) return;
+  // Instant official key check (0 tokens / 0 latency)
+  const handleSelectOption = (optionLetter: string) => {
+    setSelectedOption(optionLetter);
+    const officialKey = (pyq.correctAnswer || '').trim().toUpperCase();
+    const cleanChoice = optionLetter.trim().toUpperCase();
+    
+    // Support multi-option keys e.g. "B, D" or "A, C"
+    const isCorrect = officialKey ? (officialKey.includes(cleanChoice) || cleanChoice.includes(officialKey)) : null;
 
-    setEvaluating(true);
+    setResult({
+      correctAnswer: pyq.correctAnswer,
+      isCorrect,
+      explanation: pyq.explanation,
+      optionBreakdown: {},
+      subjectArea: pyq.subjectArea,
+      difficulty: pyq.difficulty,
+    });
+  };
+
+  // On-demand AI evaluation triggered ONLY when clicking "Evaluate with AI"
+  const handleRequestAiBreakdown = async () => {
+    const ans = selectedOption || textAnswer;
+    setAiBreakdownLoading(true);
     try {
       const res = await fetch('/api/evaluate-pyq', {
         method: 'POST',
@@ -67,27 +92,32 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
           pyqId: pyq.id,
           userAnswer: ans,
           timeTakenSeconds: 30,
+          generateAiBreakdown: true,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setResult(data);
+        setAiBreakdown({
+          explanation: data.explanation,
+          optionBreakdown: data.optionBreakdown || {},
+          eliminationTrick: data.eliminationTrick,
+        });
       }
     } catch (e) {
-      console.error('Evaluation failed:', e);
+      console.error('AI evaluation failed:', e);
     }
-    setEvaluating(false);
+    setAiBreakdownLoading(false);
   };
 
   const handleLogError = async () => {
-    if (!result?.attemptId) return;
+    if (!result) return;
     setLoggingError(true);
     try {
       const res = await fetch('/api/errors/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          attemptId: result.attemptId,
+          attemptId: result.attemptId || pyq.id,
           errorType: selectedErrorType,
           description: `Mistake on ${pyq.examStage} ${pyq.year} ${pyq.paper} Q.${pyq.questionNumber || pyq.id}`,
         }),
@@ -158,12 +188,8 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                 <button
                   key={idx}
                   onClick={() => {
-                    if (!result) {
-                      setSelectedOption(optionLetter);
-                      handleEvaluate(optionLetter);
-                    }
+                    handleSelectOption(optionLetter);
                   }}
-                  disabled={evaluating}
                   className={`w-full text-left flex items-start gap-3.5 rounded-xl border p-4 transition cursor-pointer ${cardStyle}`}
                 >
                   <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${badgeStyle}`}>
@@ -191,22 +217,32 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
               rows={4}
               className="w-full rounded-xl border border-stone-300 p-4 text-sm text-stone-900 focus:border-stone-900 focus:outline-none"
             />
-            <button
-              onClick={() => handleEvaluate()}
-              disabled={evaluating || !textAnswer.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-stone-800 disabled:opacity-50 cursor-pointer"
-            >
-              {evaluating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Evaluate with UPSC Rubric
-            </button>
           </div>
         )}
 
-        {/* Loading State */}
-        {evaluating && (
-          <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-600">
-            <Loader2 className="h-4 w-4 animate-spin text-stone-900" />
-            <span>Consulting AI UPSC Knowledge Base for option-by-option breakdown...</span>
+        {/* Evaluate with AI button (On-demand to save tokens) */}
+        {(selectedOption || textAnswer) && !aiBreakdown && (
+          <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between flex-wrap gap-3">
+            <p className="text-xs text-stone-500">
+              Need deep explanation of why other options are traps?
+            </p>
+            <button
+              onClick={handleRequestAiBreakdown}
+              disabled={aiBreakdownLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition cursor-pointer shadow-xs"
+            >
+              {aiBreakdownLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Evaluating with AI...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <span>Evaluate with AI (Option Breakdown)</span>
+                </>
+              )}
+            </button>
           </div>
         )}
       </section>
@@ -235,14 +271,14 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
             </div>
           </div>
 
-          {/* Option-by-Option Breakdown */}
-          {result.optionBreakdown && Object.keys(result.optionBreakdown).length > 0 && (
+          {/* Option-by-Option Breakdown (Generated only on demand) */}
+          {aiBreakdown?.optionBreakdown && Object.keys(aiBreakdown.optionBreakdown).length > 0 && (
             <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700">
                 <HelpCircle className="h-4 w-4 text-blue-600" /> Option-by-Option Breakdown
               </h3>
               <div className="grid gap-3">
-                {Object.entries(result.optionBreakdown).map(([optKey, explanationText]) => {
+                {Object.entries(aiBreakdown.optionBreakdown).map(([optKey, explanationText]) => {
                   const isCorrectOpt = result.correctAnswer?.toUpperCase().includes(optKey);
                   return (
                     <div 
@@ -272,25 +308,25 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
           )}
 
           {/* Conceptual Explanation */}
-          {result.explanation && (
+          {(aiBreakdown?.explanation || result.explanation) && (
             <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700">
                 <BookOpen className="h-4 w-4 text-stone-700" /> UPSC Conceptual Synthesis
               </h3>
               <p className="text-sm text-stone-800 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-200">
-                {result.explanation}
+                {aiBreakdown?.explanation || result.explanation}
               </p>
             </section>
           )}
 
           {/* Elimination Strategy */}
-          {result.eliminationTrick && (
+          {aiBreakdown?.eliminationTrick && (
             <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 space-y-2">
               <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
                 <Lightbulb className="h-4 w-4 text-amber-600" /> Elimination Tip / Exam Strategy
               </h4>
               <p className="text-sm text-amber-950 leading-relaxed font-medium">
-                {result.eliminationTrick}
+                {aiBreakdown.eliminationTrick}
               </p>
             </section>
           )}

@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
   try {
-    const { pyqId, userAnswer, timeTakenSeconds } = await req.json();
+    const { pyqId, userAnswer, timeTakenSeconds, generateAiBreakdown } = await req.json();
 
     if (!pyqId) {
       return NextResponse.json({ error: 'Missing pyqId' }, { status: 400 });
@@ -26,12 +26,15 @@ export async function POST(req: Request) {
     let explanation = pyq.explanation;
     let optionBreakdown: Record<string, string> = {};
 
-    const systemPrompt = `You are a Senior UPSC CSE Evaluator and Subject Matter Expert.
+    let aiData: any = null;
+
+    // Only invoke AI if explicitly requested by user via "Evaluate with AI" button
+    if (generateAiBreakdown) {
+      const systemPrompt = `You are a Senior UPSC CSE Evaluator and Subject Matter Expert.
 Analyze the following official UPSC question thoroughly.
 
 Provide your response strictly in JSON format matching this schema:
 {
-  "correctAnswer": "A string representing the correct option label e.g., 'A', 'B', 'C', or 'D', or brief answer if descriptive",
   "explanation": "Clear, concise high-yield conceptual explanation directly citing relevant NCERT books, Constitutional articles, Supreme Court judgments, or government reports.",
   "optionBreakdown": {
     "A": "Why option A is correct or why it is incorrect / trap.",
@@ -44,7 +47,7 @@ Provide your response strictly in JSON format matching this schema:
   "eliminationTrick": "A 1-sentence tip on how a smart UPSC aspirant could eliminate false options or identify clues in this question."
 }`;
 
-    const userPrompt = `Year: ${pyq.year}
+      const userPrompt = `Year: ${pyq.year}
 Exam Stage: ${pyq.examStage}
 Paper: ${pyq.paper}
 Question:
@@ -54,22 +57,10 @@ ${options.length > 0 ? `Options:\n${options.map((opt, i) => `${String.fromCharCo
 
 ${userAnswer ? `User selected answer: ${userAnswer}` : ''}`;
 
-    let aiData: any = null;
-
-    const geminiModels = [
-      'gemini-3.8-flash',
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-    ];
-
-    if (process.env.GEMINI_API_KEY) {
-      for (const modelName of geminiModels) {
+      if (process.env.GEMINI_API_KEY) {
         try {
           const model = genAI.getGenerativeModel({
-            model: modelName,
+            model: 'gemini-3.1-flash-lite',
             generationConfig: {
               temperature: 0.1,
               responseMimeType: 'application/json',
@@ -80,57 +71,56 @@ ${userAnswer ? `User selected answer: ${userAnswer}` : ''}`;
           const text = res.response.text()?.trim() || '';
           if (text) {
             aiData = JSON.parse(text);
-            break;
           }
         } catch (e) {
-          // Fallback to next model
+          // Gemini error
         }
       }
-    }
 
-    // Fallback to Groq if Gemini hits quota
-    if (!aiData && process.env.GROQ_API_KEY) {
-      try {
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+      // Fallback to Groq if Gemini hits quota
+      if (!aiData && process.env.GROQ_API_KEY) {
+        try {
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: 0.1,
+            }),
+          });
+          const groqJson = await groqRes.json();
+          const content = groqJson.choices?.[0]?.message?.content;
+          if (content) {
+            aiData = JSON.parse(content);
+          }
+        } catch (e) {
+          console.warn('Groq fallback error:', e);
+        }
+      }
+
+      if (aiData) {
+        correctAnswer = aiData.correctAnswer || correctAnswer;
+        explanation = aiData.explanation || explanation;
+        optionBreakdown = aiData.optionBreakdown || {};
+
+        await prisma.pYQ.update({
+          where: { id: pyqId },
+          data: {
+            correctAnswer: correctAnswer || undefined,
+            explanation: explanation || undefined,
+            subjectArea: aiData.subjectArea || pyq.subjectArea || undefined,
+            difficulty: aiData.difficulty || pyq.difficulty || undefined,
           },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.1,
-          }),
         });
-        const groqJson = await groqRes.json();
-        const content = groqJson.choices?.[0]?.message?.content;
-        if (content) {
-          aiData = JSON.parse(content);
-        }
-      } catch (e) {
-        console.warn('Groq fallback error:', e);
       }
-    }
-
-    if (aiData) {
-      correctAnswer = aiData.correctAnswer || correctAnswer;
-      explanation = aiData.explanation || explanation;
-      optionBreakdown = aiData.optionBreakdown || {};
-
-      await prisma.pYQ.update({
-        where: { id: pyqId },
-        data: {
-          correctAnswer: correctAnswer || undefined,
-          explanation: explanation || undefined,
-          subjectArea: aiData.subjectArea || pyq.subjectArea || undefined,
-          difficulty: aiData.difficulty || pyq.difficulty || undefined,
-        },
-      });
     }
 
     let isCorrect: boolean | null = null;
@@ -140,7 +130,11 @@ ${userAnswer ? `User selected answer: ${userAnswer}` : ''}`;
       const cleanUser = userAnswer.trim().toUpperCase().replace(/[^A-D0-9]/g, '');
       const cleanCorrect = correctAnswer.trim().toUpperCase().replace(/[^A-D0-9]/g, '');
       
-      isCorrect = cleanUser === cleanCorrect || 
+      // Support multi-keys like B, D or dropped questions X
+      const allowedKeys = cleanCorrect.split(/[,/]/).map(k => k.trim());
+      isCorrect = cleanCorrect === 'X' || 
+                  allowedKeys.includes(cleanUser) ||
+                  cleanUser === cleanCorrect || 
                   cleanUser.startsWith(cleanCorrect) || 
                   cleanCorrect.startsWith(cleanUser) ||
                   userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
