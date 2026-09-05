@@ -69,7 +69,7 @@ Return ONLY a valid JSON object matching this schema:
 - Subject: ${chapter.book.subject.name}
 - Book: ${chapter.book.title} (Class ${chapter.book.className})
 - Chapter ${chapter.number}: ${chapter.title}
-- Content Excerpt: ${(chapter.content || chapter.summary || '').slice(0, 15000)}`;
+- Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
 
     // Try primary high-intelligence models with automatic fallback
     const modelsToTry = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
