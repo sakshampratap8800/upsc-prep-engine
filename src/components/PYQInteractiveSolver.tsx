@@ -92,9 +92,24 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
   const [imageRangeEnd, setImageRangeEnd] = useState<number>(pyq.questionNumber || 1);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-
   const isMCQ = pyq.options && pyq.options.length > 0;
+
+  // Sync state whenever the current question changes (e.g. Next / Prev navigation)
+  useEffect(() => {
+    setEditedText(pyq.questionText);
+    setEditedPassage(pyq.passageText || '');
+    setEditedOptions(pyq.options || []);
+    setEditedCorrectAnswer(pyq.correctAnswer || '');
+    setRangeStart(pyq.questionNumber || 1);
+    setRangeEnd(pyq.questionNumber || 1);
+    setImageRangeStart(pyq.questionNumber || 1);
+    setImageRangeEnd(pyq.questionNumber || 1);
+    setSelectedOption(null);
+    setTextAnswer('');
+    setResult(null);
+    setAiBreakdown(null);
+    setIsEditingText(false);
+  }, [pyq.id, pyq.questionNumber, pyq.questionText, pyq.options, pyq.correctAnswer, pyq.passageText]);
 
   // Handle direct Ctrl+V clipboard paste anywhere on the page when in edit mode
   useEffect(() => {
@@ -440,30 +455,53 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
             </div>
 
             {/* Editable Options */}
-            {isMCQ && (
-              <div className="space-y-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
-                  Options (A, B, C, D):
+                  Options ({editedOptions.length} total):
                 </label>
-                {editedOptions.map((opt, oIdx) => (
-                  <div key={oIdx} className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-200 dark:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200">
-                      {String.fromCharCode(65 + oIdx)}
-                    </span>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => {
-                        const newOpts = [...editedOptions];
-                        newOpts[oIdx] = e.target.value;
+                <button
+                  type="button"
+                  onClick={() => setEditedOptions([...editedOptions, ''])}
+                  className="flex items-center gap-1 rounded-md bg-stone-200 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 px-2.5 py-1 text-[11px] font-bold text-stone-800 dark:text-stone-200 transition cursor-pointer"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>Add Option</span>
+                </button>
+              </div>
+
+              {editedOptions.map((opt, oIdx) => (
+                <div key={oIdx} className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-200 dark:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200">
+                    {String.fromCharCode(65 + oIdx)}
+                  </span>
+                  <input
+                    type="text"
+                    value={opt}
+                    placeholder={`Option ${String.fromCharCode(65 + oIdx)} text...`}
+                    onChange={(e) => {
+                      const newOpts = [...editedOptions];
+                      newOpts[oIdx] = e.target.value;
+                      setEditedOptions(newOpts);
+                    }}
+                    className="flex-1 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-xs sm:text-sm text-stone-900 dark:text-stone-100"
+                  />
+                  {editedOptions.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = editedOptions.filter((_, idx) => idx !== oIdx);
                         setEditedOptions(newOpts);
                       }}
-                      className="flex-1 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-xs sm:text-sm text-stone-900 dark:text-stone-100"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+                      title="Remove this option"
+                      className="p-1.5 text-stone-400 hover:text-rose-500 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
 
             <div className="flex items-center gap-4 pt-2">
               <div>
