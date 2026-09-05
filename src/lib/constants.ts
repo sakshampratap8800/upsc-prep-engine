@@ -71,4 +71,4 @@ export const NCERT_BOOKS: Array<{
 ];
 
 // PYQ file name patterns for identification
-export const PYQ_YEAR_RANGE = { min: 2016, max: 2026 };
+export const PYQ_YEAR_RANGE = { min: 2013, max: 2026 };

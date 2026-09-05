@@ -11,7 +11,6 @@ const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
 
 const MODELS = [
   'gemini-3.1-flash-lite',
-  'gemini-3.6-flash',
 ];
 let currentModelIndex = 0;
 
@@ -19,14 +18,17 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 function getModel() {
   return genAI.getGenerativeModel({
-    model: MODELS[currentModelIndex],
-    generationConfig: { responseMimeType: 'application/json' },
+    model: 'gemini-3.1-flash-lite',
+    generationConfig: { 
+      responseMimeType: 'application/json',
+      temperature: 0.1,
+    },
   });
 }
 
 function rotateModel() {
-  currentModelIndex = (currentModelIndex + 1) % MODELS.length;
-  console.log(`\n[!] Switching to model: ${MODELS[currentModelIndex]}`);
+  // Exclusively using gemini-3.1-flash-lite as configured
+  console.log(`\n[!] Retrying with model: gemini-3.1-flash-lite`);
 }
 
 export async function importPYQsWithGemini() {
@@ -231,3 +233,108 @@ function identifyPaper(fileName: string, examStage: string): string {
   }
   return 'Unknown';
 }
+
+export async function mapOfficialAnswerKeys() {
+  console.log('Starting Official Answer Key Extraction from answers.pdf (2013-2026)...');
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-3.1-flash-lite',
+    generationConfig: { responseMimeType: 'application/json' },
+  });
+
+  const pdfPath = path.join(PYQ_DIRS.prelims, 'answer', 'answers.pdf');
+  if (!fs.existsSync(pdfPath)) {
+    console.error('answers.pdf not found at:', pdfPath);
+    return { success: false, error: 'File not found' };
+  }
+
+  const buf = fs.readFileSync(pdfPath);
+  const part = {
+    inlineData: {
+      data: buf.toString('base64'),
+      mimeType: 'application/pdf',
+    },
+  };
+
+  const prompt = `This PDF contains official UPSC Prelims Answer Keys from 2013 to 2026 for Series A.
+For every single year (2013 to 2026) and for both Paper-I (General Studies) and Paper-II (CSAT), extract the official answer for SET A (Series A).
+
+CRITICAL RULES:
+1. Extract Series A answers.
+2. Support multi-option keys (e.g. "B, D" or "A, C") and dropped questions ("X").
+3. Paper 1 has 100 questions (1 to 100). Paper 2 has 80 questions (1 to 80).
+
+Return ONLY a JSON object:
+{
+  "keys": [
+    {
+      "year": 2013,
+      "paper": "Paper 1 (GS)",
+      "answers": {
+        "1": "C",
+        "2": "B",
+        "100": "D"
+      }
+    },
+    {
+      "year": 2013,
+      "paper": "Paper 2 (CSAT)",
+      "answers": {
+        "1": "A",
+        "80": "C"
+      }
+    }
+  ]
+}`;
+
+  try {
+    const result = await model.generateContent([prompt, part]);
+    const jsonText = result.response.text();
+    const parsed = JSON.parse(jsonText);
+    console.log(`Parsed ${parsed.keys?.length || 0} answer key papers from PDF.`);
+    fs.writeFileSync(path.join(PYQ_DIRS.prelims, 'answer', 'parsed_keys.json'), JSON.stringify(parsed, null, 2));
+
+    let updatedCount = 0;
+    for (const item of (parsed.keys || [])) {
+      const paperName = item.paper.includes('2') || item.paper.toLowerCase().includes('csat')
+        ? 'Paper 2 (CSAT)'
+        : 'Paper 1 (GS)';
+
+      for (const [qNumStr, ans] of Object.entries(item.answers || {})) {
+        const qNum = parseInt(qNumStr, 10);
+        if (!isNaN(qNum)) {
+          let retry = 3;
+          while (retry > 0) {
+            try {
+              const res = await prisma.pYQ.updateMany({
+                where: {
+                  year: item.year,
+                  examStage: 'Prelims',
+                  paper: paperName,
+                  questionNumber: qNum,
+                },
+                data: {
+                  correctAnswer: String(ans).trim(),
+                },
+              });
+              updatedCount += res.count;
+              break;
+            } catch (err) {
+              retry--;
+              if (retry === 0) console.warn(`Failed to update key for ${item.year} Q.${qNum}`);
+              await delay(1000);
+            }
+          }
+        }
+      }
+      console.log(`  ✓ Synced answer keys for: [${item.year}] ${paperName}`);
+      await delay(300);
+    }
+
+    console.log(`\n🎉 Answer Key Mapping Complete! Updated ${updatedCount} PYQ records with official keys.`);
+    return { success: true, updatedCount };
+  } catch (error: any) {
+    console.error('Error in mapOfficialAnswerKeys:', error);
+    return { success: false, error: error.message };
+  }
+}
+

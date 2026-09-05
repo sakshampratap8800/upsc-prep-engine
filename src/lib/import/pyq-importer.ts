@@ -33,6 +33,7 @@ export async function importAllPYQs(): Promise<PYQImportResult> {
       for (const file of files) {
         try {
           const filePath = path.join(yearPath, file);
+          const paper = identifyPaper(file, examStage);
 
           // Check if already imported
           const existing = await prisma.importLog.findFirst({
@@ -40,9 +41,24 @@ export async function importAllPYQs(): Promise<PYQImportResult> {
           });
           if (existing) continue;
 
-          const parsed = await parsePDF(filePath);
-          const paper = identifyPaper(file, examStage);
-          const questions = extractQuestions(parsed.text, examStage, parsed.pages);
+          let questions: ExtractedQuestion[] = [];
+
+          // Check if pre-extracted JSON exists in PYQ/prelims/answer
+          const jsonName = file.replace(/\.pdf$/i, '.json');
+          const jsonAnswerPath = path.join(PYQ_DIRS.prelims, 'answer', jsonName);
+
+          if (fs.existsSync(jsonAnswerPath)) {
+            const rawJson = JSON.parse(fs.readFileSync(jsonAnswerPath, 'utf8'));
+            questions = rawJson.map((q: any) => ({
+              number: q.main_number || q.number,
+              text: q.text,
+              options: q.options || undefined,
+              type: 'MCQ',
+            }));
+          } else {
+            const parsed = await parsePDF(filePath);
+            questions = extractQuestions(parsed.text, examStage, parsed.pages);
+          }
 
           for (const q of questions) {
             await prisma.pYQ.create({
@@ -59,7 +75,7 @@ export async function importAllPYQs(): Promise<PYQImportResult> {
                 subjectArea: null,
                 sourceFile: file,
                 sourcePage: q.page || null,
-                confidence: 0.8,
+                confidence: 1.0,
               },
             });
             result.questionsExtracted++;
