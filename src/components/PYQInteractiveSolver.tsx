@@ -92,6 +92,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
   const [imageRangeEnd, setImageRangeEnd] = useState<number>(pyq.questionNumber || 1);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isMCQ = pyq.options && pyq.options.length > 0;
 
   // Sync state whenever the current question changes (e.g. Next / Prev navigation)
