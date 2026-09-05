@@ -15,8 +15,11 @@ import {
   GitCompare,
   Database,
   Activity,
+  PanelLeftClose,
+  PanelLeft,
   type LucideIcon,
 } from 'lucide-react';
+import { useSidebar } from '@/context/SidebarContext';
 
 interface NavItem {
   label: string;
@@ -41,47 +44,78 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isOpen, toggle } = useSidebar();
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-stone-200 bg-white">
-      <div className="border-b border-stone-200 px-6 py-5">
-        <h1 className="text-lg font-bold tracking-tight text-stone-900">
-          UPSC Prep Engine
-        </h1>
-        <p className="mt-0.5 text-xs text-stone-500">Personal Study System</p>
-      </div>
+    <>
+      {/* Floating Toggle Button when Sidebar is Closed */}
+      {!isOpen && (
+        <button
+          onClick={toggle}
+          title="Open Navigation"
+          className="fixed bottom-6 left-6 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-stone-900 text-white shadow-xl hover:bg-stone-800 transition-transform active:scale-95 cursor-pointer"
+        >
+          <PanelLeft className="h-5 w-5" />
+        </button>
+      )}
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-1">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
-            const Icon = item.icon;
+      {/* Sidebar Container */}
+      <aside
+        className={`relative flex h-full flex-col border-r border-stone-200 bg-white transition-all duration-300 ease-in-out ${
+          isOpen ? 'w-64 min-w-[16rem]' : 'w-0 min-w-0 border-r-0 overflow-hidden'
+        }`}
+      >
+        {/* Header with Title & Collapse Button */}
+        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+          <div className="truncate">
+            <h1 className="text-base font-bold tracking-tight text-stone-900 truncate">
+              UPSC Prep Engine
+            </h1>
+            <p className="text-[11px] text-stone-500">Personal Study System</p>
+          </div>
+          <button
+            onClick={toggle}
+            title="Hide Sidebar"
+            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition cursor-pointer"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        </div>
 
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== '/' && pathname.startsWith(item.href));
+              const Icon = item.icon;
 
-      <div className="border-t border-stone-200 px-6 py-4">
-        <p className="text-xs text-stone-400">UPSC CSE 2026</p>
-        <p className="text-xs text-stone-400">18-Month Plan</p>
-      </div>
-    </aside>
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-stone-900 text-white'
+                        : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-stone-200 px-5 py-3">
+          <p className="text-xs font-medium text-stone-600">UPSC CSE 2027</p>
+          <p className="text-[11px] text-stone-400">Master Plan & Daily Execution</p>
+        </div>
+      </aside>
+    </>
   );
 }
