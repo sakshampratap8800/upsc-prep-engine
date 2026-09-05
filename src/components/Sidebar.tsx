@@ -12,7 +12,6 @@ import {
   RotateCcw,
   Target,
   AlertCircle,
-  GitCompare,
   Database,
   Activity,
   ChevronLeft,
@@ -35,7 +34,6 @@ const navItems: NavItem[] = [
   { label: 'Revision', href: '/revision', icon: RotateCcw },
   { label: 'Practice', href: '/practice', icon: Target },
   { label: 'Error Log', href: '/errors', icon: AlertCircle },
-  { label: 'Compare Optionals', href: '/compare', icon: GitCompare },
   { label: 'Search', href: '/search', icon: Search },
   { label: 'Import Data', href: '/import', icon: Database },
   { label: 'Data Health', href: '/data-health', icon: Activity },
@@ -99,7 +97,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-stone-200 px-5 py-3 min-w-[16rem]">
         <p className="text-xs font-semibold text-stone-700">UPSC CSE 2027</p>
-        <p className="text-[11px] text-stone-400">Master Plan & Daily Execution</p>
+        <p className="text-[11px] text-stone-400">Optional: Sociology</p>
       </div>
     </aside>
   );
