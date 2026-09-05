@@ -157,22 +157,30 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
     setUploadingImage(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      // Ensure a filename is provided for clipboard blobs
+      const fileName = (file instanceof File && file.name) ? file.name : `screenshot_${Date.now()}.png`;
+      formData.append('file', file, fileName);
       formData.append('pyqId', String(pyq.id));
+
+      console.log('Uploading diagram for PYQ ID:', pyq.id, 'File:', fileName, 'Type:', file.type);
 
       const res = await fetch('/api/pyq/upload-image', {
         method: 'POST',
         body: formData,
       });
       const data = await res.json();
+      console.log('Upload response:', data);
+
       if (data.success && data.imageUrl) {
         setPyq((prev) => ({ ...prev, imageUrl: data.imageUrl }));
       } else {
-        alert('Upload failed: ' + (data.error || 'Unknown error'));
+        const msg = data.error || data.message || JSON.stringify(data);
+        console.error('Upload failed with message:', msg);
+        alert(`Upload failed: ${msg}`);
       }
     } catch (e: any) {
-      console.error('Image upload failed:', e);
-      alert('Upload failed: ' + e.message);
+      console.error('Image upload failed exception:', e);
+      alert(`Upload failed: ${e.message || e}`);
     }
     setUploadingImage(false);
   };
