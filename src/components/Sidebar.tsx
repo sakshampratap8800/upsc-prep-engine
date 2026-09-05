@@ -15,8 +15,7 @@ import {
   GitCompare,
   Database,
   Activity,
-  PanelLeftClose,
-  PanelLeft,
+  ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
@@ -47,75 +46,61 @@ export function Sidebar() {
   const { isOpen, toggle } = useSidebar();
 
   return (
-    <>
-      {/* Floating Toggle Button when Sidebar is Closed */}
-      {!isOpen && (
+    <aside
+      className={`relative flex h-full flex-col border-r border-stone-200 bg-white transition-all duration-300 ease-in-out shrink-0 ${
+        isOpen ? 'w-64' : 'w-0 border-r-0 overflow-hidden'
+      }`}
+    >
+      {/* Header with Title & Collapse */}
+      <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 min-w-[16rem]">
+        <div className="truncate">
+          <h1 className="text-base font-bold tracking-tight text-stone-900">
+            UPSC Prep Engine
+          </h1>
+          <p className="text-[11px] text-stone-500">Personal Study System</p>
+        </div>
         <button
           onClick={toggle}
-          title="Open Navigation"
-          className="fixed bottom-6 left-6 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-stone-900 text-white shadow-xl hover:bg-stone-800 transition-transform active:scale-95 cursor-pointer"
+          title="Collapse sidebar"
+          className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition cursor-pointer"
         >
-          <PanelLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
-      )}
+      </div>
 
-      {/* Sidebar Container */}
-      <aside
-        className={`relative flex h-full flex-col border-r border-stone-200 bg-white transition-all duration-300 ease-in-out ${
-          isOpen ? 'w-64 min-w-[16rem]' : 'w-0 min-w-0 border-r-0 overflow-hidden'
-        }`}
-      >
-        {/* Header with Title & Collapse Button */}
-        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
-          <div className="truncate">
-            <h1 className="text-base font-bold tracking-tight text-stone-900 truncate">
-              UPSC Prep Engine
-            </h1>
-            <p className="text-[11px] text-stone-500">Personal Study System</p>
-          </div>
-          <button
-            onClick={toggle}
-            title="Hide Sidebar"
-            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition cursor-pointer"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Navigation Items */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 min-w-[16rem]">
+        <ul className="space-y-1">
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/' && pathname.startsWith(item.href));
+            const Icon = item.icon;
 
-        {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-1">
-            {navItems.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(item.href));
-              const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-stone-900 text-white'
+                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-stone-900 text-white'
-                        : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Footer */}
-        <div className="border-t border-stone-200 px-5 py-3">
-          <p className="text-xs font-medium text-stone-600">UPSC CSE 2027</p>
-          <p className="text-[11px] text-stone-400">Master Plan & Daily Execution</p>
-        </div>
-      </aside>
-    </>
+      {/* Footer */}
+      <div className="border-t border-stone-200 px-5 py-3 min-w-[16rem]">
+        <p className="text-xs font-semibold text-stone-700">UPSC CSE 2027</p>
+        <p className="text-[11px] text-stone-400">Master Plan & Daily Execution</p>
+      </div>
+    </aside>
   );
 }
