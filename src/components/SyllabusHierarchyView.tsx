@@ -285,18 +285,18 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                   const parsed = parseSyllabusString(child.name);
 
                   // CASE A: Topic has NO subsections (Simple topic like Prelims, GS points)
-                  // Render sleek single card matching header surface aesthetic
+                  // Render sleek single card matching the exact grey header bar aesthetic
                   if (!parsed.hasSubContent) {
                     return (
                       <div
                         key={child.id}
-                        className="group flex items-start justify-between gap-3 rounded-xl border border-stone-200 dark:border-stone-700/70 bg-stone-100/90 dark:bg-stone-800 p-3.5 sm:p-4 shadow-xs hover:border-stone-300 dark:hover:border-stone-600 transition"
+                        className="group flex items-start justify-between gap-3 rounded-xl border border-stone-300/80 dark:border-stone-600/80 bg-[#d6d3d1] dark:bg-[#525252] p-3.5 sm:p-4 shadow-xs hover:opacity-95 transition"
                       >
                         <div className="flex items-start gap-3 flex-1">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-950 text-[11px] font-bold text-white dark:text-stone-100">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#1c1917] dark:bg-[#171717] text-[11px] font-bold text-white">
                             {idx + 1}
                           </span>
-                          <p className="text-sm font-semibold text-stone-900 dark:text-stone-100 leading-relaxed pt-0.5">
+                          <p className="text-sm font-bold text-stone-900 dark:text-white leading-relaxed pt-0.5">
                             {parsed.title}
                           </p>
                         </div>
@@ -306,10 +306,10 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           <button
                             onClick={() => copyToClipboard(child.name, child.id)}
                             title="Copy topic text"
-                            className="rounded-lg p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-100 transition cursor-pointer"
+                            className="rounded-lg p-1.5 text-stone-700 dark:text-stone-300 hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer"
                           >
                             {copiedId === child.id ? (
-                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -318,7 +318,7 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           <Link
                             href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
                             title="Search PYQs and Books for this topic"
-                            className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600/80 bg-white/90 dark:bg-stone-900 px-2.5 py-1 text-xs font-semibold text-stone-800 dark:text-stone-200 hover:bg-white dark:hover:bg-stone-700 transition shadow-xs"
+                            className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span className="hidden sm:inline">Search PYQs</span>
@@ -332,15 +332,15 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                   return (
                     <div
                       key={child.id}
-                      className="group rounded-xl border border-stone-200 dark:border-stone-700/70 bg-white dark:bg-stone-900 shadow-xs hover:border-stone-300 dark:hover:border-stone-600 transition overflow-hidden"
+                      className="group rounded-xl border border-stone-300/80 dark:border-stone-700 bg-[#171717] dark:bg-[#121212] shadow-xs hover:border-stone-400 dark:hover:border-stone-600 transition overflow-hidden"
                     >
-                      {/* Topic Card Header */}
-                      <div className="flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-stone-100/90 dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700/80">
+                      {/* Topic Card Header - Exact same Grey Bar Style */}
+                      <div className="flex items-start justify-between gap-3 p-3.5 sm:p-4 bg-[#d6d3d1] dark:bg-[#525252] border-b border-stone-300 dark:border-stone-600">
                         <div className="flex items-start gap-3 flex-1">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-950 text-[11px] font-bold text-white dark:text-stone-100">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#1c1917] dark:bg-[#171717] text-[11px] font-bold text-white">
                             {idx + 1}
                           </span>
-                          <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug pt-0.5">
+                          <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-white leading-snug pt-0.5">
                             {parsed.title}
                           </h3>
                         </div>
@@ -350,10 +350,10 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           <button
                             onClick={() => copyToClipboard(child.name, child.id)}
                             title="Copy topic text"
-                            className="rounded-lg p-1.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-100 transition cursor-pointer"
+                            className="rounded-lg p-1.5 text-stone-700 dark:text-stone-300 hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer"
                           >
                             {copiedId === child.id ? (
-                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
@@ -362,7 +362,7 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                           <Link
                             href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
                             title="Search PYQs and Books for this topic"
-                            className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600/80 bg-white/90 dark:bg-stone-900 px-2.5 py-1 text-xs font-semibold text-stone-800 dark:text-stone-200 hover:bg-white dark:hover:bg-stone-700 transition shadow-xs"
+                            className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
                           >
                             <ExternalLink className="h-3 w-3" />
                             <span className="hidden sm:inline">Search PYQs</span>
@@ -371,19 +371,19 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                       </div>
 
                       {/* Structured Subtopics Breakdown */}
-                      <div className="p-4 sm:p-4.5 bg-white dark:bg-stone-900">
+                      <div className="p-4 sm:p-4.5 bg-stone-50 dark:bg-[#121212]">
                         {/* Alphabetical Subtopics (a), (b), (c)... */}
                         {parsed.type === 'alpha_items' && parsed.items && (
                           <div className="space-y-2">
                             {parsed.items.map((item, itemIdx) => (
                               <div
                                 key={itemIdx}
-                                className="flex items-start gap-3 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/40 p-2.5 sm:p-3 hover:bg-stone-100/80 dark:hover:bg-stone-800/70 transition"
+                                className="flex items-start gap-3 rounded-lg border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-[#1c1917]/70 p-2.5 sm:p-3 hover:bg-stone-100/80 dark:hover:bg-[#262626] transition"
                               >
-                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/50 px-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 shrink-0">
+                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-100 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800/60 px-1 text-[11px] font-bold text-amber-900 dark:text-amber-300 shrink-0">
                                   {item.label}
                                 </span>
-                                <div className="flex-1 text-xs sm:text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+                                <div className="flex-1 text-xs sm:text-sm leading-relaxed text-stone-900 dark:text-stone-200">
                                   {item.text}
                                 </div>
                                 <Link
@@ -404,11 +404,11 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                             {parsed.sections.map((sec, secIdx) => (
                               <div
                                 key={secIdx}
-                                className="rounded-lg border border-stone-200/90 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/40 p-3 sm:p-3.5 space-y-2.5"
+                                className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1c1917]/50 p-3 sm:p-3.5 space-y-2.5"
                               >
                                 {/* Section Header */}
                                 <div className="flex items-center gap-2">
-                                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-stone-200 dark:bg-stone-700 px-1.5 text-[11px] font-bold uppercase text-stone-800 dark:text-stone-200">
+                                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-stone-200 dark:bg-stone-800 px-1.5 text-[11px] font-bold uppercase text-stone-800 dark:text-stone-200">
                                     ({sec.roman})
                                   </span>
                                   <h4 className="text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100">
@@ -417,13 +417,13 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                                 </div>
 
                                 {/* Sub-items */}
-                                <div className="space-y-1.5 pl-2 sm:pl-3 border-l-2 border-stone-200 dark:border-stone-700">
+                                <div className="space-y-1.5 pl-2 sm:pl-3 border-l-2 border-stone-300 dark:border-stone-700">
                                   {sec.items.map((subItem, sIdx) => (
                                     <div
                                       key={sIdx}
-                                      className="flex items-start gap-2.5 rounded-md bg-white dark:bg-stone-800/70 border border-stone-200/70 dark:border-stone-700/60 p-2 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
+                                      className="flex items-start gap-2.5 rounded-md bg-stone-50 dark:bg-[#171717] border border-stone-200 dark:border-stone-800 p-2 text-xs sm:text-sm text-stone-900 dark:text-stone-200"
                                     >
-                                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-semibold text-xs shrink-0">
+                                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-semibold text-xs shrink-0">
                                         {subItem.label}
                                       </span>
                                       <span className="flex-1 leading-relaxed">{subItem.text}</span>
@@ -441,9 +441,9 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                             {parsed.items.map((item, sIdx) => (
                               <div
                                 key={sIdx}
-                                className="flex items-start gap-2.5 rounded-lg border border-stone-150 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 p-2.5 text-xs sm:text-sm text-stone-800 dark:text-stone-200"
+                                className="flex items-start gap-2.5 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1c1917]/60 p-2.5 text-xs sm:text-sm text-stone-900 dark:text-stone-200"
                               >
-                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-stone-400 dark:bg-stone-500 shrink-0" />
+                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-stone-500 dark:bg-stone-400 shrink-0" />
                                 <span className="flex-1 leading-relaxed">{item.text}</span>
                               </div>
                             ))}
