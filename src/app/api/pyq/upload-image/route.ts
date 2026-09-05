@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     else if (file.type === 'image/webp') ext = 'webp';
     else if (file.type === 'image/svg+xml') ext = 'svg';
 
-    // Clean naming: e.g. pyq_2013_prelims_csat_q44.png (clean, human-readable, no random timestamps)
+    // Clean naming: e.g. pyq_2014_prelims_paper_2_csat_q34.png
     const cleanPaper = pyq.paper.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toLowerCase();
     const cleanStage = pyq.examStage.toLowerCase();
     const qNum = pyq.questionNumber ? `q${pyq.questionNumber}` : `id${pyq.id}`;
@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
     const rangeStartStr = formData.get('rangeStart') as string | null;
     const rangeEndStr = formData.get('rangeEnd') as string | null;
 
+    let updatedQuestionsCount = 1;
+
     try {
       await prisma.$executeRawUnsafe(`UPDATE pyqs SET imageUrl = ? WHERE id = ?`, publicUrl, pyqId);
 
@@ -71,21 +73,23 @@ export async function POST(req: NextRequest) {
         const endQ = Math.max(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
         
         if (!isNaN(startQ) && !isNaN(endQ)) {
-          await prisma.$executeRawUnsafe(
+          const res = await prisma.$executeRawUnsafe(
             `UPDATE pyqs 
              SET imageUrl = ? 
              WHERE year = ? 
                AND examStage = ? 
-               AND paper = ? 
+               AND (paper = ? OR paper LIKE '%' || ? || '%')
                AND questionNumber >= ? 
                AND questionNumber <= ?`,
             publicUrl,
             pyq.year,
             pyq.examStage,
             pyq.paper,
+            pyq.paper.includes('CSAT') ? 'CSAT' : pyq.paper,
             startQ,
             endQ
           );
+          updatedQuestionsCount = res;
         }
       }
     } catch (dbErr) {
@@ -100,6 +104,7 @@ export async function POST(req: NextRequest) {
       success: true,
       imageUrl: publicUrl,
       fileName,
+      updatedCount: updatedQuestionsCount,
     });
   } catch (error: any) {
     console.error('Error uploading PYQ image:', error);

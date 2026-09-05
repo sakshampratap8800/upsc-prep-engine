@@ -96,11 +96,17 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
   const isMCQ = pyq.options && pyq.options.length > 0;
 
-  // Handle direct Ctrl+V clipboard paste on the card
+  // Handle direct Ctrl+V clipboard paste anywhere on the page when in edit mode
   useEffect(() => {
     if (!isEditMode) return;
 
     const handlePaste = async (e: ClipboardEvent) => {
+      // Don't intercept if typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') && target.getAttribute('type') !== 'file') {
+        return;
+      }
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -116,14 +122,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
       }
     };
 
-    const card = cardRef.current;
-    if (card) {
-      card.addEventListener('paste', handlePaste as any);
-    }
+    window.addEventListener('paste', handlePaste);
     return () => {
-      if (card) {
-        card.removeEventListener('paste', handlePaste as any);
-      }
+      window.removeEventListener('paste', handlePaste);
     };
   }, [isEditMode, pyq.id, applyImageToRange, imageRangeStart, imageRangeEnd]);
 
@@ -149,12 +150,17 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
       const res = await fetch('/api/pyq/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: pyq.id, imageUrl: directUrl }),
+        body: JSON.stringify({ 
+          id: pyq.id, 
+          imageUrl: directUrl,
+          applyImageToRange: applyImageToRange ? { startQ: imageRangeStart, endQ: imageRangeEnd } : undefined
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setPyq((prev) => ({ ...prev, imageUrl: directUrl }));
         setGdriveInputUrl('');
+        alert(applyImageToRange ? `Saved and linked diagram to Questions ${imageRangeStart} to ${imageRangeEnd}!` : 'Saved diagram URL!');
       } else {
         alert('Failed to save link: ' + (data.error || 'Unknown error'));
       }
@@ -190,6 +196,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
       if (data.success && data.imageUrl) {
         setPyq((prev) => ({ ...prev, imageUrl: data.imageUrl }));
+        if (applyImageToRange) {
+          alert(`Diagram successfully uploaded and linked to Questions ${imageRangeStart} to ${imageRangeEnd}!`);
+        }
       } else {
         const msg = data.error || data.message || JSON.stringify(data);
         console.error('Upload failed with message:', msg);

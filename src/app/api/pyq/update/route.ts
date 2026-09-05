@@ -23,6 +23,7 @@ async function handleUpdate(req: NextRequest) {
       imageUrl,
       passageText,
       applyPassageToRange, // e.g. { startQ: 20, endQ: 25 }
+      applyImageToRange,   // e.g. { startQ: 34, endQ: 37 }
     } = body;
 
     if (!id) {
@@ -64,7 +65,7 @@ async function handleUpdate(req: NextRequest) {
       await prisma.$executeRawUnsafe(`UPDATE pyqs SET passageText = ? WHERE id = ?`, passageText ? passageText.trim() : null, Number(id));
     }
 
-    // If a range is specified, strictly update matching questions in the SAME year, stage, and paper
+    // If passage range is specified, update matching questions in the SAME year, stage, and paper
     if (passageText !== undefined && applyPassageToRange && typeof applyPassageToRange.startQ === 'number' && typeof applyPassageToRange.endQ === 'number') {
       const startQ = Math.min(applyPassageToRange.startQ, applyPassageToRange.endQ);
       const endQ = Math.max(applyPassageToRange.startQ, applyPassageToRange.endQ);
@@ -75,13 +76,37 @@ async function handleUpdate(req: NextRequest) {
          SET passageText = ? 
          WHERE year = ? 
            AND examStage = ? 
-           AND paper = ? 
+           AND (paper = ? OR paper LIKE '%' || ? || '%')
            AND questionNumber >= ? 
            AND questionNumber <= ?`,
         cleanPassage,
         currentPyq.year,
         currentPyq.examStage,
         currentPyq.paper,
+        currentPyq.paper.includes('CSAT') ? 'CSAT' : currentPyq.paper,
+        startQ,
+        endQ
+      );
+    }
+
+    // If image range is specified, update matching questions in the SAME year, stage, and paper
+    if (imageUrl !== undefined && applyImageToRange && typeof applyImageToRange.startQ === 'number' && typeof applyImageToRange.endQ === 'number') {
+      const startQ = Math.min(applyImageToRange.startQ, applyImageToRange.endQ);
+      const endQ = Math.max(applyImageToRange.startQ, applyImageToRange.endQ);
+
+      await prisma.$executeRawUnsafe(
+        `UPDATE pyqs 
+         SET imageUrl = ? 
+         WHERE year = ? 
+           AND examStage = ? 
+           AND (paper = ? OR paper LIKE '%' || ? || '%')
+           AND questionNumber >= ? 
+           AND questionNumber <= ?`,
+        imageUrl,
+        currentPyq.year,
+        currentPyq.examStage,
+        currentPyq.paper,
+        currentPyq.paper.includes('CSAT') ? 'CSAT' : currentPyq.paper,
         startQ,
         endQ
       );
