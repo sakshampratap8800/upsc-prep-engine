@@ -53,9 +53,14 @@ interface ChapterReaderProps {
   };
 }
 
+interface MainsAngleItem {
+  question?: string;
+  framework?: string;
+}
+
 interface SavedSummaryObject {
   highYieldSummary?: string[];
-  mainsAngles?: string[];
+  mainsAngles?: Array<string | MainsAngleItem>;
   caseStudiesAndData?: string[];
   mapWork?: string[];
   diagramsToDraw?: string[];
@@ -261,7 +266,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                     {aiData.highYieldSummary.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-xs text-stone-800 leading-relaxed">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                        <span>{item}</span>
+                        <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -277,25 +282,41 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                   <ul className="mt-2.5 space-y-2">
                     {aiData.caseStudiesAndData.map((item, idx) => (
                       <li key={idx} className="rounded-lg bg-white border border-rose-100 p-2.5 text-xs text-stone-800 leading-relaxed">
-                        {item}
+                        {typeof item === 'string' ? item : JSON.stringify(item)}
                       </li>
                     ))}
                   </ul>
                 </section>
               )}
 
-              {/* Mains Analytical Dimensions */}
+              {/* Mains Analytical Dimensions (Handles both string and {question, framework} object) */}
               {aiData.mainsAngles && aiData.mainsAngles.length > 0 && (
                 <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
                   <h2 className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
                     <ChevronRight className="h-4 w-4 text-indigo-600" /> Mains Analytical Dimensions & Frameworks
                   </h2>
-                  <ul className="mt-3 space-y-2">
-                    {aiData.mainsAngles.map((angle, idx) => (
-                      <li key={idx} className="rounded-lg bg-stone-50 border border-stone-100 p-2.5 text-xs text-stone-800 leading-relaxed">
-                        {angle}
-                      </li>
-                    ))}
+                  <ul className="mt-3 space-y-3">
+                    {aiData.mainsAngles.map((item, idx) => {
+                      if (typeof item === 'object' && item !== null) {
+                        return (
+                          <li key={idx} className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-xs leading-relaxed space-y-1.5">
+                            {item.question && (
+                              <p className="font-semibold text-stone-900">Q: {item.question}</p>
+                            )}
+                            {item.framework && (
+                              <p className="text-stone-600 pl-2 border-l-2 border-indigo-400">
+                                <strong className="text-indigo-950 font-medium">Framework:</strong> {item.framework}
+                              </p>
+                            )}
+                          </li>
+                        );
+                      }
+                      return (
+                        <li key={idx} className="rounded-lg bg-stone-50 border border-stone-100 p-2.5 text-xs text-stone-800 leading-relaxed">
+                          {String(item)}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               )}
@@ -313,7 +334,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                     {aiData.mapWork.map((loc, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-xs text-amber-950 font-medium">
                         <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-600 flex-shrink-0" />
-                        <span>{loc}</span>
+                        <span>{typeof loc === 'string' ? loc : JSON.stringify(loc)}</span>
                       </li>
                     ))}
                   </ul>
@@ -330,7 +351,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                     {aiData.diagramsToDraw.map((diag, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-xs text-teal-950 font-medium">
                         <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-600 flex-shrink-0" />
-                        <span>{diag}</span>
+                        <span>{typeof diag === 'string' ? diag : JSON.stringify(diag)}</span>
                       </li>
                     ))}
                   </ul>
@@ -348,7 +369,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               <ul className="mt-3 space-y-2.5">
                 {keyConcepts.map((concept, i) => (
                   <li key={i} className="rounded-lg bg-stone-50 border border-stone-100 p-2.5 text-xs text-stone-800 leading-relaxed">
-                    {concept}
+                    {typeof concept === 'string' ? concept : JSON.stringify(concept)}
                   </li>
                 ))}
               </ul>
@@ -393,7 +414,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               <ul className="mt-3 space-y-2">
                 {findOutQuestions.map((q, i) => (
                   <li key={i} className="rounded-lg border border-stone-100 bg-stone-50 p-2.5 text-xs text-stone-700 leading-relaxed">
-                    {q}
+                    {typeof q === 'string' ? q : JSON.stringify(q)}
                   </li>
                 ))}
               </ul>
