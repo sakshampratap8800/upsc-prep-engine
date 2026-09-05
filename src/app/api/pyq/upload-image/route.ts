@@ -35,10 +35,11 @@ export async function POST(req: NextRequest) {
     else if (file.type === 'image/webp') ext = 'webp';
     else if (file.type === 'image/svg+xml') ext = 'svg';
 
-    const cleanPaper = pyq.paper.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    // Clean naming: e.g. pyq_2013_prelims_csat_q44.png (clean, human-readable, no random timestamps)
+    const cleanPaper = pyq.paper.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toLowerCase();
     const cleanStage = pyq.examStage.toLowerCase();
     const qNum = pyq.questionNumber ? `q${pyq.questionNumber}` : `id${pyq.id}`;
-    const fileName = `pyq_${pyq.year}_${cleanStage}_${cleanPaper}_${qNum}_${Date.now()}.${ext}`;
+    const fileName = `pyq_${pyq.year}_${cleanStage}_${cleanPaper}_${qNum}.${ext}`;
 
     // Target directories:
     // 1. User's designated drive folder: E:\books\images\pyqs\
