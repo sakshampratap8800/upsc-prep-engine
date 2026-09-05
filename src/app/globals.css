@@ -32,3 +32,8 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Hide Next.js dev indicator */
+nextjs-portal, [data-nextjs-toast], [data-nextjs-dev-indicator] {
+  display: none !important;
+}
