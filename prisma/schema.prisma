@@ -139,6 +139,7 @@ model PYQ {
   sourceFile     String
   sourcePage     Int?
   imageUrl       String?
+  passageText    String?
   confidence     Float    @default(1.0)
   createdAt      DateTime @default(now())
 

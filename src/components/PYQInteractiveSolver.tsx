@@ -17,7 +17,10 @@ import {
   Save,
   X,
   Plus,
-  Maximize2
+  Maximize2,
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useEditMode } from '@/context/EditModeContext';
 
@@ -37,12 +40,14 @@ interface PYQInteractiveSolverProps {
     directiveWord: string | null;
     questionType: string | null;
     imageUrl?: string | null;
+    passageText?: string | null;
   };
 }
 
 export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverProps) {
   const [pyq, setPyq] = useState(initialPyq);
   const { isEditMode } = useEditMode();
+  const [passageCollapsed, setPassageCollapsed] = useState(false);
 
   // Answer & Evaluation States
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -72,6 +77,10 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
   // Edit Form States
   const [isEditingText, setIsEditingText] = useState(false);
   const [editedText, setEditedText] = useState(pyq.questionText);
+  const [editedPassage, setEditedPassage] = useState(pyq.passageText || '');
+  const [applyToRange, setApplyToRange] = useState(false);
+  const [rangeStart, setRangeStart] = useState<number>(pyq.questionNumber || 1);
+  const [rangeEnd, setRangeEnd] = useState<number>(pyq.questionNumber || 1);
   const [editedOptions, setEditedOptions] = useState<string[]>(pyq.options || []);
   const [editedCorrectAnswer, setEditedCorrectAnswer] = useState(pyq.correctAnswer || '');
   const [savingChanges, setSavingChanges] = useState(false);
@@ -213,6 +222,8 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
           questionText: editedText,
           options: editedOptions,
           correctAnswer: editedCorrectAnswer,
+          passageText: editedPassage,
+          applyPassageToRange: applyToRange ? { startQ: rangeStart, endQ: rangeEnd } : undefined,
         }),
       });
       const data = await res.json();
@@ -222,6 +233,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
           questionText: editedText,
           options: editedOptions,
           correctAnswer: editedCorrectAnswer,
+          passageText: editedPassage,
         }));
         setIsEditingText(false);
       } else {
@@ -341,8 +353,63 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
         {isEditingText ? (
           <div className="space-y-4 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 p-4 mb-6">
             <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              Edit Question Text & Options
+              Edit Question Text, Passage & Options
             </h3>
+
+            {/* Reading Passage Editor */}
+            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-stone-850 p-3 space-y-2">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
+                <FileText className="h-3.5 w-3.5" />
+                Reading Passage / Context (Optional - for CSAT / Case Studies):
+              </label>
+              <textarea
+                value={editedPassage}
+                onChange={(e) => setEditedPassage(e.target.value)}
+                placeholder="Paste the shared passage text here (e.g. Directions for following items...)..."
+                rows={4}
+                className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 p-2.5 text-xs sm:text-sm text-stone-900 dark:text-stone-100 focus:outline-none"
+              />
+
+              {/* Range Apply Checkbox */}
+              <div className="pt-2 border-t border-stone-200 dark:border-stone-700 flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-stone-800 dark:text-stone-200">
+                  <input
+                    type="checkbox"
+                    checked={applyToRange}
+                    onChange={(e) => setApplyToRange(e.target.checked)}
+                    className="h-4 w-4 rounded accent-amber-600"
+                  />
+                  <span>Apply this passage to multiple questions in this same paper?</span>
+                </label>
+
+                {applyToRange && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-stone-600 dark:text-stone-400 font-medium">From Q.</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={150}
+                      value={rangeStart}
+                      onChange={(e) => setRangeStart(parseInt(e.target.value, 10) || 1)}
+                      className="w-14 rounded border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-2 py-1 font-bold text-stone-900 dark:text-stone-100"
+                    />
+                    <span className="text-stone-600 dark:text-stone-400 font-medium">to Q.</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={150}
+                      value={rangeEnd}
+                      onChange={(e) => setRangeEnd(parseInt(e.target.value, 10) || 1)}
+                      className="w-14 rounded border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-2 py-1 font-bold text-stone-900 dark:text-stone-100"
+                    />
+                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                      ({pyq.year} {pyq.examStage} {pyq.paper} only)
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                 Question Text:
@@ -413,9 +480,40 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
             </div>
           </div>
         ) : (
-          <h2 className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed whitespace-pre-wrap">
-            {pyq.questionText}
-          </h2>
+          <div className="space-y-4">
+            {/* PASSAGE / CONTEXT DISPLAY (When available) */}
+            {pyq.passageText && (
+              <div className="rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-5 shadow-xs transition-all">
+                <div className="flex items-center justify-between gap-3 border-b border-blue-200/60 dark:border-blue-900/40 pb-2.5 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 text-white text-[10px] font-bold">
+                      <FileText className="h-3 w-3" />
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
+                      Reading Comprehension Passage / Context
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setPassageCollapsed(!passageCollapsed)}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 cursor-pointer"
+                  >
+                    <span>{passageCollapsed ? 'Show Passage' : 'Hide'}</span>
+                    {passageCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+
+                {!passageCollapsed && (
+                  <p className="text-sm text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-wrap font-serif italic bg-white/60 dark:bg-stone-900/60 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40">
+                    {pyq.passageText}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <h2 className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed whitespace-pre-wrap">
+              {pyq.questionText}
+            </h2>
+          </div>
         )}
 
         {/* QUESTION DIAGRAM / IMAGE DISPLAY */}

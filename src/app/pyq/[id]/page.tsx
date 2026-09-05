@@ -68,6 +68,7 @@ export default async function PYQDetailPage({ params }: Props) {
             directiveWord: pyq.directiveWord,
             questionType: pyq.questionType,
             imageUrl: pyq.imageUrl,
+            passageText: (pyq as any).passageText,
           }}
         />
 
