@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Menu, X, BookOpen, Calendar, Search, Sun, Moon } from 'lucide-react';
+import { Menu, X, BookOpen, Calendar, Search, Sun, Moon, Edit3 } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useEditMode } from '@/context/EditModeContext';
 import Link from 'next/link';
 
 export function TopNav() {
   const { isOpen, toggle } = useSidebar();
   const { theme, toggleTheme } = useTheme();
+  const { isEditMode, toggleEditMode } = useEditMode();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 px-4 backdrop-blur transition-colors">
@@ -33,6 +35,20 @@ export function TopNav() {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Master Edit Mode Toggle Button */}
+        <button
+          onClick={toggleEditMode}
+          title={isEditMode ? 'Edit & Upload Mode is ON (Click to turn OFF)' : 'Click to enable Question Editing & Image Uploads'}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer border ${
+            isEditMode
+              ? 'bg-amber-500 text-black border-amber-600 shadow-xs animate-pulse'
+              : 'border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+          }`}
+        >
+          <Edit3 className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">{isEditMode ? 'Edit Mode: ON' : 'Edit Mode'}</span>
+        </button>
+
         <Link
           href="/syllabus"
           className="hidden sm:flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition"

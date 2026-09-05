@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -10,10 +10,16 @@ import {
   AlertTriangle, 
   Lightbulb, 
   BookOpen, 
-  Clock,
-  RotateCcw
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  Edit2,
+  Save,
+  X,
+  Plus,
+  Maximize2
 } from 'lucide-react';
-import Link from 'next/link';
+import { useEditMode } from '@/context/EditModeContext';
 
 interface PYQInteractiveSolverProps {
   pyq: {
@@ -30,13 +36,17 @@ interface PYQInteractiveSolverProps {
     difficulty: string | null;
     directiveWord: string | null;
     questionType: string | null;
+    imageUrl?: string | null;
   };
 }
 
-export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
+export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverProps) {
+  const [pyq, setPyq] = useState(initialPyq);
+  const { isEditMode } = useEditMode();
+
+  // Answer & Evaluation States
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState('');
-  const [evaluating, setEvaluating] = useState(false);
   const [result, setResult] = useState<{
     correctAnswer: string | null;
     isCorrect: boolean | null;
@@ -59,7 +69,124 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
   const [errorLogged, setErrorLogged] = useState(false);
   const [selectedErrorType, setSelectedErrorType] = useState<string>('confused_concepts');
 
+  // Edit Form States
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [editedText, setEditedText] = useState(pyq.questionText);
+  const [editedOptions, setEditedOptions] = useState<string[]>(pyq.options || []);
+  const [editedCorrectAnswer, setEditedCorrectAnswer] = useState(pyq.correctAnswer || '');
+  const [savingChanges, setSavingChanges] = useState(false);
+
+  // Image Upload States
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const isMCQ = pyq.options && pyq.options.length > 0;
+
+  // Handle direct Ctrl+V clipboard paste on the card
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            await uploadImageFile(blob);
+          }
+          break;
+        }
+      }
+    };
+
+    const card = cardRef.current;
+    if (card) {
+      card.addEventListener('paste', handlePaste as any);
+    }
+    return () => {
+      if (card) {
+        card.removeEventListener('paste', handlePaste as any);
+      }
+    };
+  }, [isEditMode, pyq.id]);
+
+  const uploadImageFile = async (file: File | Blob) => {
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('pyqId', String(pyq.id));
+
+      const res = await fetch('/api/pyq/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        setPyq((prev) => ({ ...prev, imageUrl: data.imageUrl }));
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e: any) {
+      console.error('Image upload failed:', e);
+      alert('Upload failed: ' + e.message);
+    }
+    setUploadingImage(false);
+  };
+
+  const handleRemoveImage = async () => {
+    if (!confirm('Remove this diagram from the question?')) return;
+    try {
+      const res = await fetch('/api/pyq/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pyq.id, imageUrl: null }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPyq((prev) => ({ ...prev, imageUrl: null }));
+      }
+    } catch (e) {
+      console.error('Failed to remove image:', e);
+    }
+  };
+
+  const handleSaveTextEdits = async () => {
+    setSavingChanges(true);
+    try {
+      const res = await fetch('/api/pyq/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: pyq.id,
+          questionText: editedText,
+          options: editedOptions,
+          correctAnswer: editedCorrectAnswer,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPyq((prev) => ({
+          ...prev,
+          questionText: editedText,
+          options: editedOptions,
+          correctAnswer: editedCorrectAnswer,
+        }));
+        setIsEditingText(false);
+      } else {
+        alert('Save failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (e: any) {
+      console.error('Save edits failed:', e);
+      alert('Save failed: ' + e.message);
+    }
+    setSavingChanges(false);
+  };
 
   // Instant official key check (0 tokens / 0 latency)
   const handleSelectOption = (optionLetter: string) => {
@@ -132,30 +259,183 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div ref={cardRef} tabIndex={0} className="space-y-6 outline-none">
       {/* Question Card */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 md:p-8 shadow-xs">
-        <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-4 mb-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
-            {pyq.examStage} • {pyq.paper} • {pyq.year}
+      <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 md:p-8 shadow-xs transition-colors">
+        <div className="flex items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-4 mb-4">
+          <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+            {pyq.examStage} • {pyq.paper} • {pyq.year} {pyq.questionNumber ? `• Q.${pyq.questionNumber}` : ''}
           </span>
           <div className="flex items-center gap-2">
             {pyq.subjectArea && (
-              <span className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+              <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2.5 py-1 text-xs font-semibold text-stone-700 dark:text-stone-300">
                 {pyq.subjectArea}
               </span>
             )}
             {pyq.difficulty && (
-              <span className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200">
+              <span className="rounded-md bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
                 {pyq.difficulty}
               </span>
+            )}
+
+            {/* Edit Button when Master Edit Mode is active */}
+            {isEditMode && (
+              <button
+                onClick={() => setIsEditingText(!isEditingText)}
+                className="flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-2.5 py-1 text-xs font-bold transition cursor-pointer"
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+                <span>{isEditingText ? 'Cancel' : 'Edit'}</span>
+              </button>
             )}
           </div>
         </div>
 
-        <h2 className="text-base md:text-lg font-semibold text-stone-900 leading-relaxed whitespace-pre-wrap">
-          {pyq.questionText}
-        </h2>
+        {/* INLINE QUESTION TEXT & OPTIONS EDITOR (Edit Mode) */}
+        {isEditingText ? (
+          <div className="space-y-4 rounded-xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 p-4 mb-6">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+              Edit Question Text & Options
+            </h3>
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                Question Text:
+              </label>
+              <textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                rows={4}
+                className="w-full rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 p-3 text-sm text-stone-900 dark:text-stone-100 focus:outline-none"
+              />
+            </div>
+
+            {/* Editable Options */}
+            {isMCQ && (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
+                  Options (A, B, C, D):
+                </label>
+                {editedOptions.map((opt, oIdx) => (
+                  <div key={oIdx} className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-200 dark:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200">
+                      {String.fromCharCode(65 + oIdx)}
+                    </span>
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) => {
+                        const newOpts = [...editedOptions];
+                        newOpts[oIdx] = e.target.value;
+                        setEditedOptions(newOpts);
+                      }}
+                      className="flex-1 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-xs sm:text-sm text-stone-900 dark:text-stone-100"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                  Correct Answer (e.g. A, B, C, D):
+                </label>
+                <input
+                  type="text"
+                  value={editedCorrectAnswer}
+                  onChange={(e) => setEditedCorrectAnswer(e.target.value.toUpperCase())}
+                  className="w-24 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100"
+                />
+              </div>
+
+              <div className="flex items-end gap-2 flex-1 justify-end">
+                <button
+                  onClick={() => setIsEditingText(false)}
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTextEdits}
+                  disabled={savingChanges}
+                  className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-4 py-1.5 text-xs font-bold shadow-xs hover:bg-stone-800 dark:hover:bg-white"
+                >
+                  {savingChanges ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <h2 className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed whitespace-pre-wrap">
+            {pyq.questionText}
+          </h2>
+        )}
+
+        {/* QUESTION DIAGRAM / IMAGE DISPLAY */}
+        {pyq.imageUrl && (
+          <div className="my-5 flex flex-col items-center rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-4 relative group">
+            <img
+              src={pyq.imageUrl}
+              alt={`Diagram for Question ${pyq.questionNumber || pyq.id}`}
+              className="max-h-80 w-auto object-contain rounded-xl shadow-xs cursor-zoom-in"
+              onClick={() => setZoomedImage(pyq.imageUrl || null)}
+            />
+            <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition bg-black/60 backdrop-blur rounded-lg p-1">
+              <button
+                onClick={() => setZoomedImage(pyq.imageUrl || null)}
+                title="Zoom image"
+                className="p-1.5 text-white hover:text-amber-300"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+              {isEditMode && (
+                <button
+                  onClick={handleRemoveImage}
+                  title="Remove image"
+                  className="p-1.5 text-white hover:text-rose-400"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* UPLOAD / PASTE DIAGRAM ZONE (Visible when Edit Mode is ON) */}
+        {isEditMode && (
+          <div className="my-5 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 p-5 text-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadImageFile(file);
+              }}
+            />
+            <div className="flex flex-col items-center justify-center gap-2">
+              <ImageIcon className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+              <div className="text-xs sm:text-sm text-stone-700 dark:text-stone-300">
+                <span className="font-bold text-amber-800 dark:text-amber-300">
+                  {pyq.imageUrl ? 'Replace Screenshot / Diagram' : 'Attach Screenshot / Diagram'}
+                </span>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                  Click below to choose file, OR take a screenshot (<code>Win + Shift + S</code>) and press <kbd className="rounded bg-stone-200 dark:bg-stone-800 px-1 font-mono">Ctrl + V</kbd> to paste!
+                </p>
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="mt-1 flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-3.5 py-1.5 text-xs font-bold transition cursor-pointer shadow-xs"
+              >
+                {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                <span>{uploadingImage ? 'Uploading...' : 'Choose Image File'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Options for MCQ */}
         {isMCQ ? (
@@ -164,8 +444,8 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
               const optionLetter = String.fromCharCode(65 + idx); // A, B, C, D
               const isSelected = selectedOption === optionLetter || selectedOption === opt;
               
-              let cardStyle = 'border-stone-200 bg-stone-50/50 hover:bg-stone-100 hover:border-stone-300 text-stone-800';
-              let badgeStyle = 'bg-stone-200 text-stone-700';
+              let cardStyle = 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/50 hover:bg-stone-100 dark:hover:bg-stone-800 hover:border-stone-300 dark:hover:border-stone-700 text-stone-800 dark:text-stone-200';
+              let badgeStyle = 'bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300';
 
               if (result) {
                 const isCorrectOption = 
@@ -173,15 +453,15 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                   result.correctAnswer?.toLowerCase() === opt.toLowerCase();
                 
                 if (isCorrectOption) {
-                  cardStyle = 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-medium ring-1 ring-emerald-500';
+                  cardStyle = 'border-emerald-500 dark:border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 font-medium ring-1 ring-emerald-500';
                   badgeStyle = 'bg-emerald-600 text-white';
                 } else if (isSelected && !result.isCorrect) {
-                  cardStyle = 'border-rose-400 bg-rose-50/80 text-rose-950 ring-1 ring-rose-400';
+                  cardStyle = 'border-rose-400 dark:border-rose-500 bg-rose-50/80 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200 ring-1 ring-rose-400';
                   badgeStyle = 'bg-rose-600 text-white';
                 }
               } else if (isSelected) {
-                cardStyle = 'border-stone-900 bg-stone-900 text-white shadow-xs';
-                badgeStyle = 'bg-white text-stone-900';
+                cardStyle = 'border-stone-900 dark:border-stone-100 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs';
+                badgeStyle = 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white';
               }
 
               return (
@@ -198,9 +478,9 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                   <span className="text-sm leading-relaxed flex-1">{opt}</span>
                   {result && (
                     result.correctAnswer?.toUpperCase().includes(optionLetter) ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                     ) : isSelected ? (
-                      <XCircle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                      <XCircle className="h-5 w-5 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />
                     ) : null
                   )}
                 </button>
@@ -215,21 +495,21 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
               onChange={(e) => setTextAnswer(e.target.value)}
               placeholder="Draft your main points or framework here..."
               rows={4}
-              className="w-full rounded-xl border border-stone-300 p-4 text-sm text-stone-900 focus:border-stone-900 focus:outline-none"
+              className="w-full rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 p-4 text-sm text-stone-900 dark:text-stone-100 focus:outline-none"
             />
           </div>
         )}
 
         {/* Evaluate with AI button (On-demand to save tokens) */}
         {(selectedOption || textAnswer) && !aiBreakdown && (
-          <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs text-stone-500">
+          <div className="mt-6 pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between flex-wrap gap-3">
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               Need deep explanation of why other options are traps?
             </p>
             <button
               onClick={handleRequestAiBreakdown}
               disabled={aiBreakdownLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-2 rounded-xl bg-stone-900 dark:bg-stone-100 px-5 py-2.5 text-xs font-bold text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-white disabled:opacity-50 transition cursor-pointer shadow-xs"
             >
               {aiBreakdownLoading ? (
                 <>
@@ -238,7 +518,7 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <Sparkles className="h-4 w-4 text-amber-300 dark:text-amber-500" />
                   <span>Evaluate with AI (Option Breakdown)</span>
                 </>
               )}
@@ -253,13 +533,13 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
           {/* Status Banner */}
           <div className={`rounded-2xl border p-5 flex items-start gap-4 ${
             result.isCorrect 
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-950' 
-              : 'border-rose-200 bg-rose-50 text-rose-950'
+              ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200' 
+              : 'border-rose-200 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/30 text-rose-950 dark:text-rose-200'
           }`}>
             {result.isCorrect ? (
-              <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             ) : (
-              <XCircle className="h-6 w-6 text-rose-600 shrink-0 mt-0.5" />
+              <XCircle className="h-6 w-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
               <h3 className="text-base font-bold">
@@ -273,9 +553,9 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
 
           {/* Option-by-Option Breakdown (Generated only on demand) */}
           {aiBreakdown?.optionBreakdown && Object.keys(aiBreakdown.optionBreakdown).length > 0 && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700">
-                <HelpCircle className="h-4 w-4 text-blue-600" /> Option-by-Option Breakdown
+            <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs space-y-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                <HelpCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" /> Option-by-Option Breakdown
               </h3>
               <div className="grid gap-3">
                 {Object.entries(aiBreakdown.optionBreakdown).map(([optKey, explanationText]) => {
@@ -285,21 +565,21 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                       key={optKey} 
                       className={`rounded-xl border p-4 text-sm leading-relaxed ${
                         isCorrectOpt 
-                          ? 'border-emerald-200 bg-emerald-50/50' 
-                          : 'border-stone-200 bg-stone-50/50'
+                          ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30' 
+                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/40'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold mb-1">
                         <span className={`inline-flex h-5 w-5 items-center justify-center rounded text-xs ${
-                          isCorrectOpt ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-800'
+                          isCorrectOpt ? 'bg-emerald-600 text-white' : 'bg-stone-300 dark:bg-stone-700 text-stone-800 dark:text-stone-200'
                         }`}>
                           {optKey}
                         </span>
-                        <span className={isCorrectOpt ? 'text-emerald-900' : 'text-stone-700'}>
+                        <span className={isCorrectOpt ? 'text-emerald-900 dark:text-emerald-300' : 'text-stone-700 dark:text-stone-300'}>
                           {isCorrectOpt ? 'Correct Option Explanation' : 'Why this is incorrect / trap'}
                         </span>
                       </div>
-                      <p className="text-stone-700 text-xs md:text-sm pl-7">{explanationText}</p>
+                      <p className="text-stone-700 dark:text-stone-300 text-xs md:text-sm pl-7">{explanationText}</p>
                     </div>
                   );
                 })}
@@ -309,11 +589,11 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
 
           {/* Conceptual Explanation */}
           {(aiBreakdown?.explanation || result.explanation) && (
-            <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs space-y-3">
-              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700">
-                <BookOpen className="h-4 w-4 text-stone-700" /> UPSC Conceptual Synthesis
+            <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs space-y-3">
+              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                <BookOpen className="h-4 w-4 text-stone-700 dark:text-stone-400" /> UPSC Conceptual Synthesis
               </h3>
-              <p className="text-sm text-stone-800 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-200">
+              <p className="text-sm text-stone-800 dark:text-stone-200 leading-relaxed bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-200 dark:border-stone-700">
                 {aiBreakdown?.explanation || result.explanation}
               </p>
             </section>
@@ -321,11 +601,11 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
 
           {/* Elimination Strategy */}
           {aiBreakdown?.eliminationTrick && (
-            <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 space-y-2">
-              <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
-                <Lightbulb className="h-4 w-4 text-amber-600" /> Elimination Tip / Exam Strategy
+            <section className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/30 p-5 space-y-2">
+              <h4 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400" /> Elimination Tip / Exam Strategy
               </h4>
-              <p className="text-sm text-amber-950 leading-relaxed font-medium">
+              <p className="text-sm text-amber-950 dark:text-amber-200 leading-relaxed font-medium">
                 {aiBreakdown.eliminationTrick}
               </p>
             </section>
@@ -333,18 +613,18 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
 
           {/* Mistake Logging Prompt if Incorrect */}
           {!result.isCorrect && (
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h4 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" /> Log this mistake to your Error Log?
                 </h4>
-                <p className="text-xs text-stone-500 mt-0.5">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                   Track your patterns to ensure you don't repeat this in Prelims.
                 </p>
               </div>
 
               {errorLogged ? (
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
                   ✓ Logged to Error Log
                 </span>
               ) : (
@@ -352,7 +632,7 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                   <select
                     value={selectedErrorType}
                     onChange={(e) => setSelectedErrorType(e.target.value)}
-                    className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs text-stone-800 focus:outline-none"
+                    className="rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-2.5 py-1.5 text-xs text-stone-800 dark:text-stone-200 focus:outline-none"
                   >
                     <option value="confused_concepts">Confused Concepts</option>
                     <option value="silly_mistake">Silly Mistake</option>
@@ -364,7 +644,7 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
                   <button
                     onClick={handleLogError}
                     disabled={loggingError}
-                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer"
+                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
                   >
                     {loggingError ? 'Logging...' : 'Save Error'}
                   </button>
@@ -372,6 +652,28 @@ export function PYQInteractiveSolver({ pyq }: PYQInteractiveSolverProps) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* FULL RESOLUTION IMAGE ZOOM MODAL */}
+      {zoomedImage && (
+        <div
+          onClick={() => setZoomedImage(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 cursor-zoom-out"
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img
+              src={zoomedImage}
+              alt="Zoomed Diagram"
+              className="max-h-[85vh] w-auto rounded-xl object-contain shadow-2xl border border-stone-700"
+            />
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-3 -right-3 rounded-full bg-white dark:bg-stone-800 p-1.5 text-stone-900 dark:text-stone-100 shadow-lg hover:scale-110 transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
     </div>

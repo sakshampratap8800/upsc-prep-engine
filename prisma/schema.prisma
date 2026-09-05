@@ -138,6 +138,7 @@ model PYQ {
   subjectArea    String?
   sourceFile     String
   sourcePage     Int?
+  imageUrl       String?
   confidence     Float    @default(1.0)
   createdAt      DateTime @default(now())
 

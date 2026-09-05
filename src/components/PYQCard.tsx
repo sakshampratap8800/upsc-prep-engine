@@ -11,6 +11,7 @@ interface PYQCardProps {
   subjectArea?: string;
   difficulty?: string;
   conceptTested?: string;
+  imageUrl?: string | null;
 }
 
 export function PYQCard({
@@ -22,21 +23,29 @@ export function PYQCard({
   questionText,
   subjectArea,
   difficulty,
+  imageUrl,
 }: PYQCardProps) {
   return (
     <Link href={`/pyq/${id}`} className="block">
       <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 transition-colors hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-850 shadow-xs">
-        <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
-          <span className="font-semibold text-stone-700 dark:text-stone-200">{year}</span>
-          <span>•</span>
-          <span>{examStage}</span>
-          <span>•</span>
-          <span>{paper}</span>
-          {questionNumber && (
-            <>
-              <span>•</span>
-              <span>Q.{questionNumber}</span>
-            </>
+        <div className="flex items-center justify-between gap-2 text-xs text-stone-500 dark:text-stone-400">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-700 dark:text-stone-200">{year}</span>
+            <span>•</span>
+            <span>{examStage}</span>
+            <span>•</span>
+            <span>{paper}</span>
+            {questionNumber && (
+              <>
+                <span>•</span>
+                <span>Q.{questionNumber}</span>
+              </>
+            )}
+          </div>
+          {imageUrl && (
+            <span className="rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-300">
+              🖼️ Diagram
+            </span>
           )}
         </div>
         <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200 whitespace-pre-line line-clamp-4">

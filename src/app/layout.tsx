@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { EditModeProvider } from '@/context/EditModeContext';
 
 export const metadata: Metadata = {
   title: 'UPSC Prep Engine',
@@ -34,7 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 antialiased transition-colors duration-200">
         <ThemeProvider>
-          <SidebarProvider>
+          <EditModeProvider>
+            <SidebarProvider>
             <div className="flex h-screen w-full flex-col overflow-hidden">
               {/* Top Navigation Bar with Dark Mode Toggle */}
               <TopNav />
@@ -50,8 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
           </SidebarProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+        </EditModeProvider>
+      </ThemeProvider>
+    </body>
+  </html>
+);
 }

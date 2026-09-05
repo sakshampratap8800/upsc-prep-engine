@@ -67,6 +67,7 @@ export default async function PYQDetailPage({ params }: Props) {
             difficulty: pyq.difficulty,
             directiveWord: pyq.directiveWord,
             questionType: pyq.questionType,
+            imageUrl: pyq.imageUrl,
           }}
         />
 
