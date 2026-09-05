@@ -8,21 +8,29 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function PYQDetailPage({ params }: Props) {
   const { id } = await params;
   const pyqId = parseInt(id, 10);
   if (isNaN(pyqId)) notFound();
 
-  const pyq = await prisma.pYQ.findUnique({
-    where: { id: pyqId },
-    include: {
-      topics: true,
-      concepts: true,
-      chapters: { include: { book: { include: { subject: true } } } },
-    },
-  });
+  const [pyq, rawRows] = await Promise.all([
+    prisma.pYQ.findUnique({
+      where: { id: pyqId },
+      include: {
+        topics: true,
+        concepts: true,
+        chapters: { include: { book: { include: { subject: true } } } },
+      },
+    }),
+    prisma.$queryRawUnsafe<any[]>(`SELECT passageText, imageUrl FROM pyqs WHERE id = ?`, pyqId),
+  ]);
 
   if (!pyq) notFound();
+
+  const passageText = rawRows?.[0]?.passageText || null;
+  const imageUrl = rawRows?.[0]?.imageUrl || pyq.imageUrl || null;
 
   const options: string[] = pyq.optionsJson ? JSON.parse(pyq.optionsJson) : [];
 
@@ -67,8 +75,8 @@ export default async function PYQDetailPage({ params }: Props) {
             difficulty: pyq.difficulty,
             directiveWord: pyq.directiveWord,
             questionType: pyq.questionType,
-            imageUrl: pyq.imageUrl,
-            passageText: (pyq as any).passageText,
+            imageUrl: imageUrl,
+            passageText: passageText,
           }}
         />
 
