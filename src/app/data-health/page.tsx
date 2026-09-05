@@ -1,6 +1,8 @@
 import { PageHeader } from '@/components/PageHeader';
 import prisma from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DataHealthPage() {
   let health = {
     books: 0,
