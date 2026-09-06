@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/PageHeader';
 import prisma from '@/lib/db';
 import { notFound } from 'next/navigation';
 import { ExternalLink, BookOpen } from 'lucide-react';
+import { getBookDriveInfo } from '@/lib/gdrive-map';
 
 interface Props {
   params: Promise<{ subject: string; bookId: string }>;
@@ -21,6 +22,10 @@ export default async function ReadBookPage({ params }: Props) {
 
   if (!book) notFound();
 
+  const driveInfo = getBookDriveInfo(book.fileName);
+  const pdfSrc = driveInfo?.previewUrl || `/api/pdf/${book.id}#toolbar=1&navpanes=0`;
+  const directLink = driveInfo?.viewUrl || GDRIVE_FOLDER_URL;
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -35,7 +40,7 @@ export default async function ReadBookPage({ params }: Props) {
         actions={
           <div className="flex items-center gap-2">
             <a
-              href={`/api/pdf/${book.id}`}
+              href={directLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3.5 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-300 shadow-xs hover:bg-stone-50 dark:hover:bg-stone-700 transition cursor-pointer"
@@ -58,9 +63,10 @@ export default async function ReadBookPage({ params }: Props) {
 
       <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs overflow-hidden h-[calc(100vh-180px)]">
         <iframe
-          src={`/api/pdf/${book.id}#toolbar=1&navpanes=0`}
+          src={pdfSrc}
           className="w-full h-full border-none"
           title={`PDF Reader: ${book.title}`}
+          allow="autoplay"
         />
       </div>
     </div>

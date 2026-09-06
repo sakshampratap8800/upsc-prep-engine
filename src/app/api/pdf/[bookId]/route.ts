@@ -34,9 +34,11 @@ export async function GET(
     }
 
     if (!fs.existsSync(targetPath)) {
-      // Fallback for Vercel / Cloud deployments: Redirect to Google Drive
-      const gdriveFolder = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=sharing';
-      return NextResponse.redirect(gdriveFolder, 307);
+      // Fallback for Vercel / Cloud deployments: Redirect to exact Google Drive Book
+      const { getBookDriveInfo } = await import('@/lib/gdrive-map');
+      const driveInfo = getBookDriveInfo(book.fileName);
+      const targetUrl = driveInfo?.previewUrl || driveInfo?.viewUrl || 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=sharing';
+      return NextResponse.redirect(targetUrl, 307);
     }
 
     const stat = fs.statSync(targetPath);

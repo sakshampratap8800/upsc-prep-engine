@@ -23,6 +23,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { useEditMode } from '@/context/EditModeContext';
+import { GDRIVE_IMAGE_MAP } from '@/lib/gdrive-map';
 
 interface PYQInteractiveSolverProps {
   pyq: {
@@ -582,34 +583,38 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
         )}
 
         {/* QUESTION DIAGRAM / IMAGE DISPLAY */}
-        {pyq.imageUrl && (
-          <div className="my-5 flex flex-col items-center rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-4 relative group">
-            <img
-              src={pyq.imageUrl}
-              alt={`Diagram for Question ${pyq.questionNumber || pyq.id}`}
-              className="max-h-80 w-auto object-contain rounded-xl shadow-xs cursor-zoom-in"
-              onClick={() => setZoomedImage(pyq.imageUrl || null)}
-            />
-            <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition bg-black/60 backdrop-blur rounded-lg p-1">
-              <button
-                onClick={() => setZoomedImage(pyq.imageUrl || null)}
-                title="Zoom image"
-                className="p-1.5 text-white hover:text-amber-300"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-              {isEditMode && (
+        {pyq.imageUrl && (() => {
+          const cleanKey = pyq.imageUrl.replace('/pyq-images/', '');
+          const resolvedSrc = GDRIVE_IMAGE_MAP[cleanKey] || pyq.imageUrl;
+          return (
+            <div className="my-5 flex flex-col items-center rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-4 relative group">
+              <img
+                src={resolvedSrc}
+                alt={`Diagram for Question ${pyq.questionNumber || pyq.id}`}
+                className="max-h-80 w-auto object-contain rounded-xl shadow-xs cursor-zoom-in"
+                onClick={() => setZoomedImage(resolvedSrc)}
+              />
+              <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition bg-black/60 backdrop-blur rounded-lg p-1">
                 <button
-                  onClick={handleRemoveImage}
-                  title="Remove image"
-                  className="p-1.5 text-white hover:text-rose-400"
+                  onClick={() => setZoomedImage(resolvedSrc)}
+                  title="Zoom image"
+                  className="p-1.5 text-white hover:text-amber-300 cursor-pointer"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Maximize2 className="h-4 w-4" />
                 </button>
-              )}
+                {isEditMode && (
+                  <button
+                    onClick={handleRemoveImage}
+                    title="Remove image"
+                    className="p-1.5 text-white hover:text-rose-400 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* UPLOAD / PASTE DIAGRAM ZONE (Visible when Edit Mode is ON) */}
         {isEditMode && (
