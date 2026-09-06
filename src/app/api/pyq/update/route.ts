@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { verifyAuthToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   return handleUpdate(req);
@@ -11,6 +12,11 @@ export async function PATCH(req: NextRequest) {
 
 async function handleUpdate(req: NextRequest) {
   try {
+    const authToken = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || req.cookies.get('upsc_admin_token')?.value;
+    if (!verifyAuthToken(authToken)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin password required to edit questions' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { 
       id, 

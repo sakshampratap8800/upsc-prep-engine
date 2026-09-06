@@ -53,19 +53,19 @@ export default async function DashboardPage() {
           {/* Two column layout */}
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* Today's Study */}
-            <div className="rounded-xl border border-stone-200 bg-white p-6">
-              <h2 className="text-lg font-bold text-stone-900">Today's Study</h2>
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+              <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Today's Study</h2>
               {todayTasks.length === 0 ? (
-                <p className="mt-4 text-sm text-stone-500">No tasks scheduled. Check the timetable.</p>
+                <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No tasks scheduled. Check the timetable.</p>
               ) : (
                 <ul className="mt-4 space-y-3">
                   {todayTasks.map((task) => (
-                    <li key={task.id} className="flex items-start gap-3 rounded-lg bg-stone-50 p-3">
-                      <ClipboardList className="mt-0.5 h-4 w-4 text-stone-400" />
+                    <li key={task.id} className="flex items-start gap-3 rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 p-3">
+                      <ClipboardList className="mt-0.5 h-4 w-4 text-stone-400 dark:text-stone-500" />
                       <div>
-                        <p className="text-sm font-medium text-stone-800">{task.title}</p>
+                        <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{task.title}</p>
                         {task.timeAllocation && (
-                          <p className="mt-0.5 text-xs text-stone-500">{task.timeAllocation}</p>
+                          <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{task.timeAllocation}</p>
                         )}
                       </div>
                     </li>
@@ -75,19 +75,19 @@ export default async function DashboardPage() {
             </div>
 
             {/* Recent Imports */}
-            <div className="rounded-xl border border-stone-200 bg-white p-6">
-              <h2 className="text-lg font-bold text-stone-900">Recent Import Activity</h2>
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+              <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Recent Import Activity</h2>
               {recentImports.length === 0 ? (
-                <p className="mt-4 text-sm text-stone-500">No imports yet.</p>
+                <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No imports yet.</p>
               ) : (
                 <ul className="mt-4 space-y-2">
                   {recentImports.map((imp) => (
-                    <li key={imp.id} className="flex items-center justify-between rounded-lg bg-stone-50 px-3 py-2">
+                    <li key={imp.id} className="flex items-center justify-between rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 px-3 py-2">
                       <div>
-                        <p className="text-sm font-medium text-stone-700">{imp.fileName}</p>
-                        <p className="text-xs text-stone-500">{imp.fileType} • {imp.message || ''}</p>
+                        <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{imp.fileName}</p>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">{imp.fileType} • {imp.message || ''}</p>
                       </div>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${imp.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${imp.status === 'success' ? 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-900/60' : 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60'}`}>
                         {imp.status}
                       </span>
                     </li>
@@ -105,9 +105,9 @@ export default async function DashboardPage() {
               { label: 'Syllabus Map', href: '/syllabus', desc: 'UPSC syllabus structure' },
               { label: 'Practice', href: '/practice', desc: 'Prelims & Mains practice' },
             ].map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-xl border border-stone-200 bg-white p-5 transition-colors hover:border-stone-300 hover:bg-stone-50">
-                <h3 className="font-semibold text-stone-900">{item.label}</h3>
-                <p className="mt-1 text-xs text-stone-500">{item.desc}</p>
+              <Link key={item.href} href={item.href} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 transition-colors hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60 shadow-xs">
+                <h3 className="font-semibold text-stone-900 dark:text-stone-100">{item.label}</h3>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{item.desc}</p>
               </Link>
             ))}
           </div>

@@ -68,12 +68,12 @@ export default async function PracticePage() {
               href={mode.href} 
               className={`rounded-2xl border p-6 transition-all hover:shadow-md ${
                 mode.featured 
-                  ? 'border-stone-900 bg-stone-900 text-white hover:bg-stone-800 ring-2 ring-stone-900/10' 
-                  : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50'
+                  ? 'border-stone-900 dark:border-stone-700 bg-stone-900 dark:bg-stone-900 text-white hover:bg-stone-800 dark:hover:bg-stone-850 ring-2 ring-stone-900/10' 
+                  : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60'
               }`}
             >
               <div className="flex items-start justify-between">
-                <div className={`p-3 rounded-xl ${mode.featured ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-700'}`}>
+                <div className={`p-3 rounded-xl ${mode.featured ? 'bg-stone-800 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300'}`}>
                   <Icon className="h-6 w-6" />
                 </div>
                 {mode.tag && (
@@ -83,13 +83,13 @@ export default async function PracticePage() {
                 )}
               </div>
 
-              <h3 className={`mt-4 text-lg font-bold ${mode.featured ? 'text-white' : 'text-stone-900'}`}>
+              <h3 className={`mt-4 text-lg font-bold ${mode.featured ? 'text-white' : 'text-stone-900 dark:text-stone-100'}`}>
                 {mode.title}
               </h3>
-              <p className={`mt-1 text-sm leading-relaxed ${mode.featured ? 'text-stone-300' : 'text-stone-500'}`}>
+              <p className={`mt-1 text-sm leading-relaxed ${mode.featured ? 'text-stone-300' : 'text-stone-500 dark:text-stone-400'}`}>
                 {mode.desc}
               </p>
-              <p className={`mt-4 text-xs font-semibold ${mode.featured ? 'text-amber-300' : 'text-stone-400'}`}>
+              <p className={`mt-4 text-xs font-semibold ${mode.featured ? 'text-amber-300' : 'text-stone-400 dark:text-stone-500'}`}>
                 {mode.stats}
               </p>
             </Link>

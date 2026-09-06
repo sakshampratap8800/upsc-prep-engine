@@ -89,8 +89,8 @@ export default async function BookDetailPage({ params }: Props) {
       {/* Chapters Section Header */}
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h3 className="text-base font-bold text-stone-900">Chapter UPSC Notes & Analysis</h3>
-          <p className="text-xs text-stone-500">
+          <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">Chapter UPSC Notes & Analysis</h3>
+          <p className="text-xs text-stone-500 dark:text-stone-400">
             Click any chapter card to access full-width UPSC Prelims points, Mains dimensions, Map work, and definitions.
           </p>
         </div>

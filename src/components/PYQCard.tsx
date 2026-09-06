@@ -26,8 +26,8 @@ export function PYQCard({
   imageUrl,
 }: PYQCardProps) {
   return (
-    <Link href={`/pyq/${id}`} className="block">
-      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 transition-colors hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-850 shadow-xs">
+    <Link href={`/pyq/${id}`} className="block group">
+      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 transition-all duration-150 hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-100/70 dark:hover:bg-stone-800/70 shadow-xs">
         <div className="flex items-center justify-between gap-2 text-xs text-stone-500 dark:text-stone-400">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-stone-700 dark:text-stone-200">{year}</span>

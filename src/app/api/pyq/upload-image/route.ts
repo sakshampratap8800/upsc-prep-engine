@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { verifyAuthToken } from '@/lib/auth';
 import fs from 'fs';
 import path from 'path';
 
 export async function POST(req: NextRequest) {
   try {
+    const authToken = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || req.cookies.get('upsc_admin_token')?.value;
+    if (!verifyAuthToken(authToken)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin password required to upload diagrams' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const pyqIdStr = formData.get('pyqId') as string | null;

@@ -175,11 +175,11 @@ export default async function PYQDetailPage({ params }: Props) {
 
         {/* Syllabus Connection */}
         {pyq.topics.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Syllabus Connection</h2>
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">Syllabus Connection</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {pyq.topics.map((t: { id: number; name: string; paper: string }) => (
-                <span key={t.id} className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-100">
+                <span key={t.id} className="rounded-lg bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/60">
                   {t.name} ({t.paper})
                 </span>
               ))}
@@ -189,13 +189,13 @@ export default async function PYQDetailPage({ params }: Props) {
 
         {/* NCERT Connection */}
         {pyq.chapters.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">NCERT Connection</h2>
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">NCERT Connection</h2>
             <div className="mt-3 space-y-2">
               {pyq.chapters.map((ch: { id: number; number: number; title: string; book: { className: number; title: string; subject: { name: string } } }) => (
-                <div key={ch.id} className="rounded-xl bg-stone-50 p-3.5 border border-stone-200">
-                  <p className="text-sm font-bold text-stone-900">Ch.{ch.number}: {ch.title}</p>
-                  <p className="text-xs text-stone-500 mt-0.5">{ch.book.subject.name} • Class {ch.book.className} • {ch.book.title}</p>
+                <div key={ch.id} className="rounded-xl bg-stone-50 dark:bg-stone-800/60 p-3.5 border border-stone-200 dark:border-stone-700">
+                  <p className="text-sm font-bold text-stone-900 dark:text-stone-100">Ch.{ch.number}: {ch.title}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{ch.book.subject.name} • Class {ch.book.className} • {ch.book.title}</p>
                 </div>
               ))}
             </div>
@@ -204,17 +204,17 @@ export default async function PYQDetailPage({ params }: Props) {
 
         {/* Related PYQs */}
         {relatedPYQs.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Related PYQs in {pyq.subjectArea}</h2>
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">Related PYQs in {pyq.subjectArea}</h2>
             <div className="mt-3 space-y-2">
               {relatedPYQs.map((rp) => (
-                <a key={rp.id} href={`/pyq/${rp.id}`} className="block rounded-xl bg-stone-50 p-3.5 border border-stone-200 hover:bg-stone-100 transition-colors">
-                  <div className="flex items-center gap-2 text-xs text-stone-500">
-                    <span className="font-bold text-stone-700">{rp.year}</span>
+                <a key={rp.id} href={`/pyq/${rp.id}`} className="block rounded-xl bg-stone-50 dark:bg-stone-800/60 p-3.5 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+                    <span className="font-bold text-stone-700 dark:text-stone-200">{rp.year}</span>
                     <span>•</span><span>{rp.examStage}</span>
                     <span>•</span><span>{rp.paper}</span>
                   </div>
-                  <p className="mt-1 text-sm text-stone-800 line-clamp-2">{rp.questionText}</p>
+                  <p className="mt-1 text-sm text-stone-800 dark:text-stone-200 line-clamp-2">{rp.questionText}</p>
                 </a>
               ))}
             </div>

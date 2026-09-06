@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
+import { AdminPasswordModal } from '@/components/AdminPasswordModal';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { EditModeProvider } from '@/context/EditModeContext';
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 antialiased transition-colors duration-200">
         <ThemeProvider>
           <EditModeProvider>
+            <AdminPasswordModal />
             <SidebarProvider>
             <div className="flex h-screen w-full flex-col overflow-hidden">
               {/* Top Navigation Bar with Dark Mode Toggle */}

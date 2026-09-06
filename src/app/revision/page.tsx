@@ -41,12 +41,12 @@ export default async function RevisionPage() {
       ) : (
         <div className="space-y-3">
           {pendingItems.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-lg border border-stone-200 bg-white p-4">
+            <div key={item.id} className="flex items-center justify-between rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
               <div>
-                <p className="text-sm font-medium text-stone-800">{item.title}</p>
-                <p className="mt-0.5 text-xs text-stone-500">
+                <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{item.title}</p>
+                <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
                   Reviewed {item.reviewCount} time{item.reviewCount !== 1 ? 's' : ''}
-                  {item.lastReviewedAt && ` \u2022 Last: ${new Date(item.lastReviewedAt).toLocaleDateString()}`}
+                  {item.lastReviewedAt && ` • Last: ${new Date(item.lastReviewedAt).toLocaleDateString()}`}
                 </p>
               </div>
               <RelevanceBadge level={item.priority} />

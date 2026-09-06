@@ -160,9 +160,9 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           {/* Read in Full Book Reader */}
           <Link
             href={`/library/${chapter.book.subject.slug}/${chapter.book.id}/read`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-2.5 text-xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-xs"
           >
-            <BookOpen className="h-4 w-4 text-stone-600" />
+            <BookOpen className="h-4 w-4 text-stone-600 dark:text-stone-300" />
             Open Full Book
           </Link>
 
@@ -170,7 +170,7 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           <button
             onClick={handleAnalyze}
             disabled={analyzing}
-            className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 text-xs font-bold text-white shadow transition hover:bg-stone-800 disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-stone-900 dark:bg-stone-100 px-5 py-2.5 text-xs font-bold text-white dark:text-stone-900 shadow transition hover:bg-stone-800 dark:hover:bg-stone-200 disabled:opacity-50 cursor-pointer"
           >
             {analyzing ? (
               <>
@@ -179,12 +179,12 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               </>
             ) : hasSavedNotes ? (
               <>
-                <RotateCcw className="h-3.5 w-3.5 text-stone-300" />
+                <RotateCcw className="h-3.5 w-3.5 text-stone-300 dark:text-stone-600" />
                 Re-Analyze with Gemini 3.8 Flash
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4 text-amber-300" />
+                <Sparkles className="h-4 w-4 text-amber-300 dark:text-amber-500" />
                 Analyze with Gemini 3.8 Flash
               </>
             )}
@@ -195,16 +195,16 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             href={GDRIVE_FOLDER_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3.5 py-2.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition"
           >
-            <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+            <ExternalLink className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />
             Drive
           </a>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-red-700">
+        <div className="rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 p-4 text-xs text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
@@ -216,21 +216,21 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           <div className="space-y-6">
             {/* High-Yield Prelims Takeaways */}
             {aiData.highYieldSummary && aiData.highYieldSummary.length > 0 && (
-              <section className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6 shadow-sm">
+              <section className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/30 p-6 shadow-xs">
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                  <span className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-xs">
                     <Sparkles className="h-3.5 w-3.5 text-amber-300" /> High-Yield UPSC Takeaways
                   </span>
                   {aiData.relevance && (
-                    <span className="text-xs font-bold text-indigo-900 bg-indigo-100/90 px-3 py-1 rounded-lg border border-indigo-200">
+                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 bg-indigo-100/90 dark:bg-indigo-900/50 px-3 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
                       {aiData.relevance}
                     </span>
                   )}
                 </div>
                 <ul className="mt-4 space-y-3">
                   {aiData.highYieldSummary.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-stone-800 leading-relaxed bg-white/80 rounded-xl p-3.5 border border-indigo-100">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <li key={idx} className="flex items-start gap-3 text-sm text-stone-800 dark:text-stone-200 leading-relaxed bg-white/90 dark:bg-stone-900/90 rounded-xl p-3.5 border border-indigo-100 dark:border-indigo-900/40">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                       <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
                     </li>
                   ))}
@@ -240,13 +240,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
             {/* Specific Case Studies & Statistical Tables */}
             {aiData.caseStudiesAndData && aiData.caseStudiesAndData.length > 0 && (
-              <section className="rounded-2xl border border-rose-200 bg-rose-50/40 p-6 shadow-sm">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-rose-900 flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4 text-rose-600" /> NCERT Data Tables & Real-World Case Studies
+              <section className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-6 shadow-xs">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-rose-900 dark:text-rose-300 flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-rose-600 dark:text-rose-400" /> NCERT Data Tables & Real-World Case Studies
                 </h2>
                 <ul className="mt-4 space-y-3">
                   {aiData.caseStudiesAndData.map((item, idx) => (
-                    <li key={idx} className="rounded-xl bg-white border border-rose-100 p-4 text-sm text-stone-800 leading-relaxed shadow-2xs">
+                    <li key={idx} className="rounded-xl bg-white dark:bg-stone-900 border border-rose-100 dark:border-rose-900/40 p-4 text-sm text-stone-800 dark:text-stone-200 leading-relaxed shadow-2xs">
                       {typeof item === 'string' ? item : JSON.stringify(item)}
                     </li>
                   ))}
@@ -256,29 +256,29 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
             {/* Mains Analytical Dimensions */}
             {aiData.mainsAngles && aiData.mainsAngles.length > 0 && (
-              <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-stone-800 flex items-center gap-2">
-                  <ChevronRight className="h-5 w-5 text-indigo-600" /> Mains Analytical Dimensions & Frameworks
+              <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-2">
+                  <ChevronRight className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Mains Analytical Dimensions & Frameworks
                 </h2>
                 <ul className="mt-4 space-y-4">
                   {aiData.mainsAngles.map((item, idx) => {
                     if (typeof item === 'object' && item !== null) {
                       return (
-                        <li key={idx} className="rounded-xl bg-stone-50 border border-stone-200 p-4 text-sm leading-relaxed space-y-2">
+                        <li key={idx} className="rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 p-4 text-sm leading-relaxed space-y-2">
                           {item.question && (
-                            <p className="font-bold text-stone-900 text-base">Q: {item.question}</p>
+                            <p className="font-bold text-stone-900 dark:text-stone-100 text-base">Q: {item.question}</p>
                           )}
                           {item.framework && (
-                            <div className="text-stone-700 pl-3.5 border-l-3 border-indigo-500 bg-white p-3 rounded-r-lg border border-stone-100">
-                              <p className="text-xs uppercase tracking-wider font-bold text-indigo-900 mb-1">Answer Framework & Value-Add Points:</p>
-                              <p className="text-xs text-stone-700 leading-relaxed">{item.framework}</p>
+                            <div className="text-stone-700 dark:text-stone-300 pl-3.5 border-l-3 border-indigo-500 bg-white dark:bg-stone-900 p-3 rounded-r-lg border border-stone-100 dark:border-stone-800">
+                              <p className="text-xs uppercase tracking-wider font-bold text-indigo-900 dark:text-indigo-300 mb-1">Answer Framework & Value-Add Points:</p>
+                              <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed">{item.framework}</p>
                             </div>
                           )}
                         </li>
                       );
                     }
                     return (
-                      <li key={idx} className="rounded-xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-800 leading-relaxed">
+                      <li key={idx} className="rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 p-4 text-sm text-stone-800 dark:text-stone-200 leading-relaxed">
                         {String(item)}
                       </li>
                     );
@@ -289,17 +289,17 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
             {/* UPSC Map Work & Atlas Locations */}
             {aiData.mapWork && aiData.mapWork.length > 0 && (
-              <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 shadow-sm">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-amber-600" /> Required UPSC Map Work & Atlas Pointers
+              <section className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 p-6 shadow-xs">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-amber-600 dark:text-amber-400" /> Required UPSC Map Work & Atlas Pointers
                 </h2>
-                <p className="mt-1 text-xs text-amber-800">
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-400">
                   Locate, trace, and mark these critical geographic coordinates/sites on your Atlas:
                 </p>
                 <ul className="mt-4 space-y-2.5">
                   {aiData.mapWork.map((loc, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-sm text-amber-950 font-medium bg-white/90 p-3 rounded-xl border border-amber-100">
-                      <span className="mt-1.5 h-2 w-2 rounded-full bg-amber-600 flex-shrink-0" />
+                    <li key={idx} className="flex items-start gap-2.5 text-sm text-amber-950 dark:text-amber-200 font-medium bg-white/90 dark:bg-stone-900 p-3 rounded-xl border border-amber-100 dark:border-amber-900/40">
+                      <span className="mt-1.5 h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-400 flex-shrink-0" />
                       <span>{typeof loc === 'string' ? loc : JSON.stringify(loc)}</span>
                     </li>
                   ))}
@@ -309,14 +309,14 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
             {/* Essential Mains Diagrams & Flowcharts */}
             {aiData.diagramsToDraw && aiData.diagramsToDraw.length > 0 && (
-              <section className="rounded-2xl border border-teal-200 bg-teal-50/60 p-6 shadow-sm">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-teal-900 flex items-center gap-2">
-                  <PenTool className="h-5 w-5 text-teal-600" /> Diagrams & Flowcharts for Mains Answer Writing
+              <section className="rounded-2xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/60 dark:bg-teal-950/20 p-6 shadow-xs">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-teal-900 dark:text-teal-300 flex items-center gap-2">
+                  <PenTool className="h-5 w-5 text-teal-600 dark:text-teal-400" /> Diagrams & Flowcharts for Mains Answer Writing
                 </h2>
                 <ul className="mt-4 space-y-2.5">
                   {aiData.diagramsToDraw.map((diag, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-sm text-teal-950 font-medium bg-white/90 p-3 rounded-xl border border-teal-100">
-                      <span className="mt-1.5 h-2 w-2 rounded-full bg-teal-600 flex-shrink-0" />
+                    <li key={idx} className="flex items-start gap-2.5 text-sm text-teal-950 dark:text-teal-200 font-medium bg-white/90 dark:bg-stone-900 p-3 rounded-xl border border-teal-100 dark:border-teal-900/40">
+                      <span className="mt-1.5 h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400 flex-shrink-0" />
                       <span>{typeof diag === 'string' ? diag : JSON.stringify(diag)}</span>
                     </li>
                   ))}
@@ -328,13 +328,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
         {/* Prelims Focus / Comprehensive Concepts */}
         {keyConcepts.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-blue-600" /> Prelims High-Yield Explanations & Traps
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" /> Prelims High-Yield Explanations & Traps
             </h2>
             <ul className="mt-4 space-y-3">
               {keyConcepts.map((concept, i) => (
-                <li key={i} className="rounded-xl bg-stone-50 border border-stone-100 p-3.5 text-sm text-stone-800 leading-relaxed">
+                <li key={i} className="rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 p-3.5 text-sm text-stone-800 dark:text-stone-200 leading-relaxed">
                   {typeof concept === 'string' ? concept : JSON.stringify(concept)}
                 </li>
               ))}
@@ -344,13 +344,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
         {/* Essential Definitions */}
         {definitions.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">Essential Definitions & Formulas</h2>
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">Essential Definitions & Formulas</h2>
             <dl className="mt-4 grid gap-3 md:grid-cols-2">
               {definitions.map((def, i) => (
-                <div key={i} className="rounded-xl bg-stone-50 p-3.5 border border-stone-100">
-                  <dt className="text-sm font-bold text-stone-900">{def.term}</dt>
-                  <dd className="mt-1 text-xs text-stone-600 leading-relaxed">{def.definition}</dd>
+                <div key={i} className="rounded-xl bg-stone-50 dark:bg-stone-800/60 p-3.5 border border-stone-100 dark:border-stone-800">
+                  <dt className="text-sm font-bold text-stone-900 dark:text-stone-100">{def.term}</dt>
+                  <dd className="mt-1 text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{def.definition}</dd>
                 </div>
               ))}
             </dl>
@@ -359,11 +359,11 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
         {/* Syllabus Connection */}
         {chapter.topics.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">UPSC Syllabus Mappings</h2>
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">UPSC Syllabus Mappings</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {chapter.topics.map((t) => (
-                <span key={t.id} className="rounded-lg bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 border border-blue-100">
+                <span key={t.id} className="rounded-lg bg-blue-50 dark:bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/60">
                   {t.name} ({t.paper})
                 </span>
               ))}
@@ -373,13 +373,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
         {/* NCERT Find Out Questions */}
         {findOutQuestions.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 flex items-center gap-2">
-              <HelpCircle className="h-4 w-4 text-stone-400" /> NCERT Thought Questions
+          <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-stone-400 dark:text-stone-500" /> NCERT Thought Questions
             </h2>
             <ul className="mt-3 space-y-2.5">
               {findOutQuestions.map((q, i) => (
-                <li key={i} className="rounded-xl border border-stone-100 bg-stone-50 p-3 text-xs text-stone-700 leading-relaxed">
+                <li key={i} className="rounded-xl border border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/60 p-3 text-xs text-stone-700 dark:text-stone-300 leading-relaxed">
                   {typeof q === 'string' ? q : JSON.stringify(q)}
                 </li>
               ))}
@@ -388,13 +388,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
         )}
 
         {/* Related PYQs */}
-        <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700">
+        <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
             Related PYQs {chapter.pyqs.length > 0 && `(${chapter.pyqs.length})`}
           </h2>
           {chapter.pyqs.length === 0 ? (
-            <p className="mt-3 text-xs text-stone-500">
-              No PYQs linked yet. (Batch mapping on standby per your schedule).
+            <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
+              No PYQs linked yet.
             </p>
           ) : (
             <div className="mt-3 space-y-3">
@@ -417,10 +417,10 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
         {/* Empty state prompt */}
         {!hasSavedNotes && (
-          <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-white p-10 text-center">
+          <div className="rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-10 text-center">
             <Sparkles className="mx-auto h-10 w-10 text-amber-500 mb-3" />
-            <h3 className="text-base font-bold text-stone-800">No UPSC Notes Generated Yet</h3>
-            <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+            <h3 className="text-base font-bold text-stone-800 dark:text-stone-200">No UPSC Notes Generated Yet</h3>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-sm mx-auto">
               Click <strong>"Analyze with Gemini 3.8 Flash"</strong> above to extract deep Prelims takeaways, exact definitions & differences, Case Studies, Mains dimensions, and Atlas Map locations.
             </p>
           </div>

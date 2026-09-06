@@ -77,25 +77,25 @@ export default async function DataHealthPage() {
           { label: 'Syllabus Topics', value: health.syllabusTopics },
           { label: 'Study Tasks', value: health.studyTasks },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-stone-200 bg-white p-4">
-            <p className="text-2xl font-bold text-stone-900">{s.value}</p>
-            <p className="text-xs text-stone-500">{s.label}</p>
+          <div key={s.label} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
+            <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{s.value}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Mapping Coverage */}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-stone-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-stone-900">Chapter → Topic Mapping</h2>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Chapter → Topic Mapping</h2>
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-stone-600">{health.chaptersWithTopics} / {health.chapters} chapters mapped</span>
-              <span className={`font-bold ${mappingCoverage >= 80 ? 'text-green-600' : mappingCoverage >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+              <span className="text-stone-600 dark:text-stone-400">{health.chaptersWithTopics} / {health.chapters} chapters mapped</span>
+              <span className={`font-bold ${mappingCoverage >= 80 ? 'text-green-600 dark:text-green-400' : mappingCoverage >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
                 {mappingCoverage}%
               </span>
             </div>
-            <div className="mt-2 h-3 rounded-full bg-stone-100">
+            <div className="mt-2 h-3 rounded-full bg-stone-100 dark:bg-stone-800">
               <div
                 className={`h-3 rounded-full ${mappingCoverage >= 80 ? 'bg-green-500' : mappingCoverage >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
                 style={{ width: `${mappingCoverage}%` }}
@@ -104,16 +104,16 @@ export default async function DataHealthPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-stone-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-stone-900">PYQ → Topic Mapping</h2>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">PYQ → Topic Mapping</h2>
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-stone-600">{health.pyqsWithTopics} / {health.pyqs} PYQs mapped</span>
-              <span className={`font-bold ${pyqMappingCoverage >= 80 ? 'text-green-600' : pyqMappingCoverage >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+              <span className="text-stone-600 dark:text-stone-400">{health.pyqsWithTopics} / {health.pyqs} PYQs mapped</span>
+              <span className={`font-bold ${pyqMappingCoverage >= 80 ? 'text-green-600 dark:text-green-400' : pyqMappingCoverage >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
                 {pyqMappingCoverage}%
               </span>
             </div>
-            <div className="mt-2 h-3 rounded-full bg-stone-100">
+            <div className="mt-2 h-3 rounded-full bg-stone-100 dark:bg-stone-800">
               <div
                 className={`h-3 rounded-full ${pyqMappingCoverage >= 80 ? 'bg-green-500' : pyqMappingCoverage >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
                 style={{ width: `${pyqMappingCoverage}%` }}
@@ -125,25 +125,25 @@ export default async function DataHealthPage() {
 
       {/* Books by Subject */}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-stone-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-stone-900">Books by Subject</h2>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Books by Subject</h2>
           <div className="mt-4 space-y-2">
             {health.booksBySubject.map((s) => (
-              <div key={s.name} className="flex items-center justify-between rounded-lg bg-stone-50 px-3 py-2">
-                <span className="text-sm text-stone-700">{s.name}</span>
-                <span className="text-sm font-semibold text-stone-900">{s._count.books}</span>
+              <div key={s.name} className="flex items-center justify-between rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 px-3 py-2">
+                <span className="text-sm text-stone-700 dark:text-stone-300">{s.name}</span>
+                <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{s._count.books}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-stone-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-stone-900">PYQs by Stage</h2>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">PYQs by Stage</h2>
           <div className="mt-4 space-y-2">
             {health.pyqsByStage.map((s) => (
-              <div key={s.examStage} className="flex items-center justify-between rounded-lg bg-stone-50 px-3 py-2">
-                <span className="text-sm text-stone-700">{s.examStage}</span>
-                <span className="text-sm font-semibold text-stone-900">{s._count.id}</span>
+              <div key={s.examStage} className="flex items-center justify-between rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 px-3 py-2">
+                <span className="text-sm text-stone-700 dark:text-stone-300">{s.examStage}</span>
+                <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{s._count.id}</span>
               </div>
             ))}
           </div>
@@ -151,13 +151,13 @@ export default async function DataHealthPage() {
       </div>
 
       {/* PYQs by Year */}
-      <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6">
-        <h2 className="text-lg font-bold text-stone-900">PYQs by Year</h2>
+      <div className="mt-6 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">PYQs by Year</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           {health.pyqsByYear.map((y) => (
-            <div key={y.year} className="rounded-lg bg-stone-50 px-3 py-2 text-center">
-              <p className="text-sm font-bold text-stone-900">{y.year}</p>
-              <p className="text-xs text-stone-500">{y._count.id} Qs</p>
+            <div key={y.year} className="rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 px-3 py-2 text-center">
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{y.year}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">{y._count.id} Qs</p>
             </div>
           ))}
         </div>
@@ -165,12 +165,12 @@ export default async function DataHealthPage() {
 
       {/* Chapters Missing Topics */}
       {health.chaptersMissingTopics.length > 0 && (
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
-          <h2 className="text-lg font-bold text-amber-900">Chapters Without Topic Mapping ({health.chapters - health.chaptersWithTopics})</h2>
-          <p className="mt-1 text-xs text-amber-700">Run the intelligence pipeline to auto-map these chapters to syllabus topics.</p>
+        <div className="mt-6 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-6">
+          <h2 className="text-lg font-bold text-amber-900 dark:text-amber-300">Chapters Without Topic Mapping ({health.chapters - health.chaptersWithTopics})</h2>
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Run the intelligence pipeline to auto-map these chapters to syllabus topics.</p>
           <div className="mt-4 space-y-1">
             {health.chaptersMissingTopics.map((ch) => (
-              <div key={ch.id} className="text-sm text-amber-800">
+              <div key={ch.id} className="text-sm text-amber-800 dark:text-amber-300">
                 <span className="font-medium">{ch.book.title}</span> → {ch.title}
               </div>
             ))}
@@ -179,20 +179,20 @@ export default async function DataHealthPage() {
       )}
 
       {/* Import Logs */}
-      <div className="mt-6 rounded-xl border border-stone-200 bg-white p-6">
-        <h2 className="text-lg font-bold text-stone-900">Import History</h2>
+      <div className="mt-6 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
+        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Import History</h2>
         <div className="mt-4 space-y-2">
           {health.importLogs.map((log) => (
-            <div key={log.id} className="flex items-center justify-between rounded-lg bg-stone-50 px-3 py-2">
+            <div key={log.id} className="flex items-center justify-between rounded-lg bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 px-3 py-2">
               <div>
-                <p className="text-sm font-medium text-stone-700">{log.fileName}</p>
-                <p className="text-xs text-stone-500">{log.fileType} • {log.message || ''}</p>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{log.fileName}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{log.fileType} • {log.message || ''}</p>
               </div>
               <div className="text-right">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${log.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${log.status === 'success' ? 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-900/60' : 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60'}`}>
                   {log.status}
                 </span>
-                <p className="mt-0.5 text-xs text-stone-400">{new Date(log.processedAt).toLocaleDateString()}</p>
+                <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">{new Date(log.processedAt).toLocaleDateString()}</p>
               </div>
             </div>
           ))}
@@ -201,17 +201,17 @@ export default async function DataHealthPage() {
 
       {/* Activity Stats */}
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-stone-200 bg-white p-4 text-center">
-          <p className="text-2xl font-bold text-stone-900">{health.answerAttempts}</p>
-          <p className="text-xs text-stone-500">Answer Attempts</p>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 text-center shadow-xs">
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{health.answerAttempts}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Answer Attempts</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-4 text-center">
-          <p className="text-2xl font-bold text-stone-900">{health.revisionItems}</p>
-          <p className="text-xs text-stone-500">Revision Items</p>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 text-center shadow-xs">
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{health.revisionItems}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Revision Items</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-4 text-center">
-          <p className="text-2xl font-bold text-stone-900">{health.errorLogs}</p>
-          <p className="text-xs text-stone-500">Error Logs</p>
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 text-center shadow-xs">
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{health.errorLogs}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Error Logs</p>
         </div>
       </div>
     </div>

@@ -145,27 +145,27 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
         <div className="flex gap-6">
           {/* Filters Sidebar */}
           <div className="w-56 flex-shrink-0">
-            <div className="sticky top-6 max-h-[40vh] overflow-y-auto rounded-xl border border-stone-200 bg-white p-4">
-              <h3 className="text-sm font-bold text-stone-900">Exam Stage</h3>
+            <div className="sticky top-6 max-h-[75vh] overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
+              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Exam Stage</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm ${!stage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                  <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!stage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                     All Stages
                   </Link>
                 </li>
                 {stageStats.map((s) => (
                   <li key={s.examStage}>
-                    <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm ${stage === s.examStage ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                    <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${stage === s.examStage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                       {s.examStage} ({s._count.id})
                     </Link>
                   </li>
                 ))}
               </ul>
 
-              <h3 className="mt-6 text-sm font-bold text-stone-900">Year</h3>
+              <h3 className="mt-6 text-sm font-bold text-stone-900 dark:text-stone-100">Year</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href={buildPyqHref({ stage, paper })} className={`block rounded-lg px-3 py-1.5 text-sm ${!year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                  <Link href={buildPyqHref({ stage, paper })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!year ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                     All Years
                   </Link>
                 </li>
@@ -181,23 +181,23 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
 
                   return (
                     <li key={y.year}>
-                      <Link href={buildPyqHref({ stage, year: y.year, openYear: isOpen ? undefined : y.year })} className={`block rounded-lg px-3 py-1.5 text-sm ${year === y.year ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}>
+                      <Link href={buildPyqHref({ stage, year: y.year, openYear: isOpen ? undefined : y.year })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${year === y.year ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                         {y.year} ({y._count.id})
                       </Link>
                       {isOpen && (
-                        <ul className="mt-1 space-y-1 border-l border-stone-200 pl-3">
+                        <ul className="mt-1 space-y-1 border-l border-stone-200 dark:border-stone-800 pl-3">
                           <li>
-                            <Link href={buildPyqHref({ stage, year: y.year, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs ${year === y.year && !paper ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'}`}>
+                            <Link href={buildPyqHref({ stage, year: y.year, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs font-medium transition ${year === y.year && !paper ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900' : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                               All papers
                             </Link>
                           </li>
                           {Object.entries(papersByStage).map(([stageName, papers]) => (
                             <li key={`${y.year}-${stageName}`}>
-                              <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-stone-400">{stageName}</p>
+                              <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-stone-400 dark:text-stone-500">{stageName}</p>
                               <ul className="space-y-1">
                                 {papers.map((p) => (
                                   <li key={`${y.year}-${stageName}-${p.paper}`}>
-                                    <Link href={buildPyqHref({ stage: p.examStage, year: y.year, paper: p.paper, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs ${year === y.year && stage === p.examStage && paper === p.paper ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'}`}>
+                                    <Link href={buildPyqHref({ stage: p.examStage, year: y.year, paper: p.paper, openYear: y.year })} className={`block rounded-md px-3 py-1.5 text-xs font-medium transition ${year === y.year && stage === p.examStage && paper === p.paper ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900' : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                                       {p.paper} ({p._count.id})
                                     </Link>
                                   </li>
@@ -213,11 +213,11 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
               </ul>
 
               {paper && (
-                <div className="mt-4 rounded-lg bg-stone-50 p-3">
-                  <p className="text-xs font-medium text-stone-500">Active paper</p>
+                <div className="mt-4 rounded-lg bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 p-3">
+                  <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Active paper</p>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-stone-800">{paper}</span>
-                    <Link href={buildPyqHref({ stage, year, openYear })} className="text-xs font-medium text-stone-500 hover:text-stone-900">
+                    <span className="text-sm font-semibold text-stone-800 dark:text-stone-200">{paper}</span>
+                    <Link href={buildPyqHref({ stage, year, openYear })} className="text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100">
                       Clear
                     </Link>
                   </div>
@@ -227,13 +227,13 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           </div>
 
           {/* PYQ List */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="space-y-6">
               {Object.entries(groupedPyqs).map(([category, items]) => (
                 <section key={category}>
-                  <div className="mb-3 flex items-center justify-between border-b border-stone-200 pb-2">
-                    <h2 className="text-sm font-bold text-stone-900">{category}</h2>
-                    <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                  <div className="mb-3 flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-2">
+                    <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100">{category}</h2>
+                    <span className="rounded-full bg-stone-100 dark:bg-stone-800 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">
                       {items.length} shown
                     </span>
                   </div>
@@ -258,29 +258,29 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center gap-2">
+              <div className="mt-8 flex items-center justify-center gap-2">
                 {page > 1 && (
-                  <Link href={buildPyqHref({ stage, year, paper, page: page - 1, openYear })} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
+                  <Link href={buildPyqHref({ stage, year, paper, page: page - 1, openYear })} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition">
                     Previous
                   </Link>
                 )}
                 {pageItems.map((item, index) => item === 'ellipsis' ? (
-                  <span key={`ellipsis-${index}`} className="px-1.5 text-sm text-stone-400">...</span>
+                  <span key={`ellipsis-${index}`} className="px-1.5 text-sm text-stone-400 dark:text-stone-500">...</span>
                 ) : (
                   <Link
                     key={item}
                     href={buildPyqHref({ stage, year, paper, page: item, openYear })}
-                    className={`min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm ${
+                    className={`min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm font-medium transition ${
                       item === page
-                        ? 'border-stone-900 bg-stone-900 text-white'
-                        : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+                        ? 'border-stone-900 dark:border-stone-100 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-bold'
+                        : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700'
                     }`}
                   >
                     {item}
                   </Link>
                 ))}
                 {page < totalPages && (
-                  <Link href={buildPyqHref({ stage, year, paper, page: page + 1, openYear })} className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">
+                  <Link href={buildPyqHref({ stage, year, paper, page: page + 1, openYear })} className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-sm font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition">
                     Next
                   </Link>
                 )}

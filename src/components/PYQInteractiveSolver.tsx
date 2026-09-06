@@ -46,7 +46,7 @@ interface PYQInteractiveSolverProps {
 
 export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverProps) {
   const [pyq, setPyq] = useState(initialPyq);
-  const { isEditMode } = useEditMode();
+  const { isEditMode, authToken, isAuthenticated, openPasswordModal } = useEditMode();
   const [passageCollapsed, setPassageCollapsed] = useState(false);
 
   // Answer & Evaluation States
@@ -205,6 +205,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
       const res = await fetch('/api/pyq/upload-image', {
         method: 'POST',
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: formData,
       });
       const data = await res.json();
@@ -232,7 +235,10 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
     try {
       const res = await fetch('/api/pyq/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ id: pyq.id, imageUrl: null }),
       });
       const data = await res.json();
@@ -249,7 +255,10 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
     try {
       const res = await fetch('/api/pyq/update', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           id: pyq.id,
           questionText: editedText,
@@ -390,7 +399,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
             </h3>
 
             {/* Reading Passage Editor */}
-            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-stone-850 p-3 space-y-2">
+            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-stone-900 p-3 space-y-2">
               <label className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
                 <FileText className="h-3.5 w-3.5" />
                 Reading Passage / Context (Optional - for CSAT / Case Studies):
@@ -685,7 +694,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
               const optionLetter = String.fromCharCode(65 + idx); // A, B, C, D
               const isSelected = selectedOption === optionLetter || selectedOption === opt;
               
-              let cardStyle = 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/50 hover:bg-stone-100 dark:hover:bg-stone-800 hover:border-stone-300 dark:hover:border-stone-700 text-stone-800 dark:text-stone-200';
+              let cardStyle = 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 hover:border-stone-300 dark:hover:border-stone-700 text-stone-800 dark:text-stone-200';
               let badgeStyle = 'bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300';
 
               if (result) {
@@ -809,7 +818,7 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                       className={`rounded-xl border p-4 text-sm leading-relaxed ${
                         isCorrectOpt 
                           ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30' 
-                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-850/40'
+                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/40'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold mb-1">

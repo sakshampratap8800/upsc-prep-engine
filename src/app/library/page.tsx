@@ -43,17 +43,17 @@ export default async function LibraryPage() {
         <div className="space-y-8">
           {subjects.map((subject) => (
             <div key={subject.id}>
-              <h2 className="mb-4 text-lg font-bold text-stone-900">{subject.name}</h2>
+              <h2 className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100">{subject.name}</h2>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {subject.books.map((book) => (
                   <Link
                     key={book.id}
                     href={`/library/${subject.slug}/${book.id}`}
-                    className="rounded-xl border border-stone-200 bg-white p-5 transition-colors hover:border-stone-300 hover:bg-stone-50"
+                    className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 transition-colors hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60 shadow-xs"
                   >
-                    <p className="text-xs font-medium text-stone-500">Class {book.className}</p>
-                    <h3 className="mt-1 font-semibold text-stone-900">{book.title}</h3>
-                    <p className="mt-2 text-xs text-stone-500">{book.totalChapters} chapters</p>
+                    <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Class {book.className}</p>
+                    <h3 className="mt-1 font-semibold text-stone-900 dark:text-stone-100">{book.title}</h3>
+                    <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{book.totalChapters} chapters</p>
                   </Link>
                 ))}
               </div>
