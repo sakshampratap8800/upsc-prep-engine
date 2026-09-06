@@ -76,8 +76,8 @@ export const getCachedSyllabusHierarchy = unstable_cache(
       orderBy: { id: 'asc' },
     });
   },
-  ['syllabus-hierarchy-tree-v3'],
-  { revalidate: 3600, tags: ['syllabus'] }
+  ['syllabus-hierarchy-tree-v4'],
+  { revalidate: 0, tags: ['syllabus'] }
 );
 
 export const getCachedDashboardStats = unstable_cache(
