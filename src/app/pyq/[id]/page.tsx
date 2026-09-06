@@ -17,25 +17,36 @@ export default async function PYQDetailPage({ params }: Props) {
   const pyqId = parseInt(id, 10);
   if (isNaN(pyqId)) notFound();
 
-  const [pyq, rawRows] = await Promise.all([
-    prisma.pYQ.findUnique({
-      where: { id: pyqId },
-      include: {
-        topics: true,
-        concepts: true,
-        chapters: { include: { book: { include: { subject: true } } } },
+  const pyq = await prisma.pYQ.findUnique({
+    where: { id: pyqId },
+    include: {
+      topics: { select: { id: true, name: true, paper: true } },
+      concepts: { select: { id: true, name: true } },
+      chapters: {
+        select: {
+          id: true,
+          number: true,
+          title: true,
+          book: {
+            select: {
+              id: true,
+              title: true,
+              className: true,
+              subject: { select: { name: true, slug: true } },
+            },
+          },
+        },
       },
-    }),
-    prisma.$queryRawUnsafe<any[]>(`SELECT passageText, imageUrl FROM pyqs WHERE id = ?`, pyqId),
-  ]);
+    },
+  });
 
   if (!pyq) notFound();
 
-  const passageText = rawRows?.[0]?.passageText || null;
-  const imageUrl = rawRows?.[0]?.imageUrl || pyq.imageUrl || null;
+  const passageText = pyq.passageText || null;
+  const imageUrl = pyq.imageUrl || null;
 
-  // Find previous and next question in the exact same examStage, year, and paper
-  const [prevPyq, nextPyq] = await Promise.all([
+  // Run prev, next, and related questions lookup concurrently
+  const [prevPyq, nextPyq, relatedPYQs] = await Promise.all([
     prisma.pYQ.findFirst({
       where: {
         year: pyq.year,
@@ -60,19 +71,17 @@ export default async function PYQDetailPage({ params }: Props) {
       orderBy: pyq.questionNumber !== null ? { questionNumber: 'asc' } : { id: 'asc' },
       select: { id: true, questionNumber: true },
     }),
+    pyq.subjectArea
+      ? prisma.pYQ.findMany({
+          where: { subjectArea: pyq.subjectArea, id: { not: pyq.id } },
+          take: 5,
+          orderBy: { year: 'desc' },
+          select: { id: true, year: true, examStage: true, paper: true, questionText: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const options: string[] = pyq.optionsJson ? JSON.parse(pyq.optionsJson) : [];
-
-  // Find related PYQs (same subject area or overlapping topics)
-  let relatedPYQs: Array<{ id: number; year: number; examStage: string; paper: string; questionText: string }> = [];
-  if (pyq.subjectArea) {
-    relatedPYQs = await prisma.pYQ.findMany({
-      where: { subjectArea: pyq.subjectArea, id: { not: pyq.id } },
-      take: 5,
-      orderBy: { year: 'desc' },
-    });
-  }
 
   const navButtons = (
     <div className="flex items-center gap-2">

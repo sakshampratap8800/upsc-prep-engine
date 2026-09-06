@@ -1,11 +1,9 @@
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
-import prisma from '@/lib/db';
+import { getCachedSyllabusHierarchy } from '@/lib/cached-queries';
 import { GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { SyllabusHierarchyView } from '@/components/SyllabusHierarchyView';
-
-export const dynamic = 'force-dynamic';
 
 export default async function SyllabusPage() {
   let topics: Array<{
@@ -18,14 +16,7 @@ export default async function SyllabusPage() {
   }> = [];
 
   try {
-    topics = await prisma.syllabusTopic.findMany({
-      where: { parentId: null },
-      include: {
-        children: { orderBy: { id: 'asc' } },
-        _count: { select: { pyqs: true } },
-      },
-      orderBy: { id: 'asc' },
-    });
+    topics = await getCachedSyllabusHierarchy();
   } catch (err) {
     console.error('Error fetching syllabus topics:', err);
   }

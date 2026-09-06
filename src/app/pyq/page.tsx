@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PYQCard } from '@/components/PYQCard';
 import { EmptyState } from '@/components/EmptyState';
 import prisma from '@/lib/db';
+import { getCachedPyqStats } from '@/lib/cached-queries';
 import { FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,8 +26,6 @@ type YearStat = { year: number; _count: { id: number } };
 type StageStat = { examStage: string; _count: { id: number } };
 type YearStagePaperStat = { year: number; examStage: string; paper: string; _count: { id: number } };
 
-const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Sociology'];
-
 function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number }) {
   const params = new URLSearchParams();
   if (filters.stage) params.set('stage', filters.stage);
@@ -37,20 +36,6 @@ function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; 
 
   const query = params.toString();
   return query ? `/pyq?${query}` : '/pyq';
-}
-
-function dedupePyqs(items: PYQListItem[]) {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const normalizedText = item.questionText.trim().replace(/\s+/g, ' ').toLowerCase();
-    const key = item.examStage === 'Prelims' && item.questionNumber
-      ? [item.year, item.examStage, item.paper, item.questionNumber].join('|')
-      : [item.year, item.examStage, item.paper, item.questionNumber ?? '', normalizedText].join('|');
-
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 function getPageItems(currentPage: number, totalPages: number): PageItem[] {
@@ -75,45 +60,6 @@ function getPageItems(currentPage: number, totalPages: number): PageItem[] {
   return items;
 }
 
-function countYears(items: PYQListItem[]): YearStat[] {
-  const counts = new Map<number, YearStat>();
-  for (const item of items) {
-    const existing = counts.get(item.year);
-    if (existing) existing._count.id++;
-    else counts.set(item.year, { year: item.year, _count: { id: 1 } });
-  }
-  return Array.from(counts.values()).sort((a, b) => b.year - a.year);
-}
-
-function countStages(items: PYQListItem[]): StageStat[] {
-  const counts = new Map<string, StageStat>();
-  for (const item of items) {
-    const existing = counts.get(item.examStage);
-    if (existing) existing._count.id++;
-    else counts.set(item.examStage, { examStage: item.examStage, _count: { id: 1 } });
-  }
-  return Array.from(counts.values()).sort((a, b) =>
-    STAGE_ORDER.indexOf(a.examStage) - STAGE_ORDER.indexOf(b.examStage) ||
-    a.examStage.localeCompare(b.examStage)
-  );
-}
-
-function countYearStagePapers(items: PYQListItem[]): YearStagePaperStat[] {
-  const counts = new Map<string, YearStagePaperStat>();
-  for (const item of items) {
-    const key = [item.year, item.examStage, item.paper].join('|');
-    const existing = counts.get(key);
-    if (existing) existing._count.id++;
-    else counts.set(key, { year: item.year, examStage: item.examStage, paper: item.paper, _count: { id: 1 } });
-  }
-  return Array.from(counts.values()).sort((a, b) =>
-    b.year - a.year ||
-    STAGE_ORDER.indexOf(a.examStage) - STAGE_ORDER.indexOf(b.examStage) ||
-    a.examStage.localeCompare(b.examStage) ||
-    a.paper.localeCompare(b.paper)
-  );
-}
-
 export default async function PYQBrowserPage({ searchParams }: Props) {
   const sp = await searchParams;
   const stage = sp.stage || '';
@@ -136,22 +82,34 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
     if (year) where.year = year;
     if (paper) where.paper = paper;
 
-    const rawPyqs = await prisma.pYQ.findMany({
-      where,
-      orderBy: [{ year: 'desc' }, { examStage: 'asc' }, { paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
-    });
-    const uniquePyqs = dedupePyqs(rawPyqs);
-    totalCount = uniquePyqs.length;
-    pyqs = uniquePyqs.slice((page - 1) * perPage, page * perPage);
+    const [stats, pyqResults, count] = await Promise.all([
+      getCachedPyqStats(),
+      prisma.pYQ.findMany({
+        where,
+        orderBy: [{ year: 'desc' }, { examStage: 'asc' }, { paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
+        skip: (page - 1) * perPage,
+        take: perPage,
+        select: {
+          id: true,
+          year: true,
+          examStage: true,
+          paper: true,
+          questionNumber: true,
+          questionText: true,
+          subjectArea: true,
+          difficulty: true,
+        },
+      }),
+      prisma.pYQ.count({ where }),
+    ]);
 
-    const allPyqs = dedupePyqs(await prisma.pYQ.findMany({
-      orderBy: [{ year: 'desc' }, { examStage: 'asc' }, { paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
-    }));
+    totalCountRaw = stats.totalCountRaw;
+    yearStats = stats.yearStats;
+    stageStats = stats.stageStats;
+    yearStagePaperStats = stats.yearStagePaperStats;
 
-    yearStats = countYears(allPyqs);
-    stageStats = countStages(allPyqs);
-    yearStagePaperStats = countYearStagePapers(allPyqs);
-    totalCountRaw = allPyqs.length;
+    pyqs = pyqResults;
+    totalCount = count;
   } catch {
     // DB not ready
   }

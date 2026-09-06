@@ -1,7 +1,7 @@
 import { BookOpen, FileQuestion, GraduationCap, ClipboardList, RotateCcw, Calendar } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { PageHeader } from '@/components/PageHeader';
-import { getBookCount, getChapterCount, getPyqCount, getSyllabusTopicCount, getDueRevisionCount, getPendingTaskCount } from '@/lib/queries';
+import { getCachedDashboardStats } from '@/lib/cached-queries';
 import prisma from '@/lib/db';
 import Link from 'next/link';
 
@@ -11,18 +11,14 @@ export default async function DashboardPage() {
   let todayTasks: Array<{ id: number; title: string; description: string | null; status: string; timeAllocation: string | null }> = [];
 
   try {
-    const [bookCount, chapterCount, pyqCount, topicCount, revisionCount, taskCount] = await Promise.all([
-      getBookCount(),
-      getChapterCount(),
-      getPyqCount(),
-      getSyllabusTopicCount(),
-      getDueRevisionCount(),
-      getPendingTaskCount(),
+    const [dashStats, imports, tasks] = await Promise.all([
+      getCachedDashboardStats(),
+      prisma.importLog.findMany({ orderBy: { processedAt: 'desc' }, take: 5 }),
+      prisma.studyTask.findMany({ where: { status: { in: ['not_started', 'in_progress'] } }, take: 5, orderBy: { id: 'asc' } }),
     ]);
-    stats = { books: bookCount, chapters: chapterCount, pyqs: pyqCount, syllabusTopics: topicCount, revisionsDue: revisionCount, pendingTasks: taskCount };
-
-    recentImports = await prisma.importLog.findMany({ orderBy: { processedAt: 'desc' }, take: 5 });
-    todayTasks = await prisma.studyTask.findMany({ where: { status: { in: ['not_started', 'in_progress'] } }, take: 5, orderBy: { id: 'asc' } });
+    stats = dashStats;
+    recentImports = imports;
+    todayTasks = tasks;
   } catch {
     // Database may not be initialized yet
   }
