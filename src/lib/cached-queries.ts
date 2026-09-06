@@ -77,7 +77,7 @@ export const getCachedSyllabusHierarchy = unstable_cache(
     });
   },
   ['syllabus-hierarchy-tree-v4'],
-  { revalidate: 0, tags: ['syllabus'] }
+  { revalidate: 60, tags: ['syllabus'] }
 );
 
 export const getCachedDashboardStats = unstable_cache(
