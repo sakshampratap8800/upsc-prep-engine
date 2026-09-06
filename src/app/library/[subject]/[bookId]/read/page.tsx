@@ -7,7 +7,7 @@ interface Props {
   params: Promise<{ subject: string; bookId: string }>;
 }
 
-const GDRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=drive_link';
+const GDRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=sharing';
 
 export default async function ReadBookPage({ params }: Props) {
   const { subject, bookId } = await params;

@@ -18,9 +18,15 @@ export async function GET(
     });
     if (!book) return new NextResponse('Book not found', { status: 404 });
 
-    // Look in primary path or fallback relative to project root
-    let targetPath = book.filePath;
-    if (!targetPath || !fs.existsSync(targetPath)) {
+    // Look in:
+    // 1. Next.js public/books directory (bundled inside app)
+    // 2. Original recorded file path
+    // 3. E:/books/<subject>/<fileName>
+    let targetPath = path.resolve(process.cwd(), 'public/books', book.fileName);
+    if (!fs.existsSync(targetPath) && book.filePath && fs.existsSync(book.filePath)) {
+      targetPath = book.filePath;
+    }
+    if (!fs.existsSync(targetPath)) {
       targetPath = path.resolve('E:/books', book.subject.slug, book.fileName);
     }
     if (!fs.existsSync(targetPath)) {
@@ -29,7 +35,7 @@ export async function GET(
 
     if (!fs.existsSync(targetPath)) {
       // Fallback for Vercel / Cloud deployments: Redirect to Google Drive
-      const gdriveFolder = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=drive_link';
+      const gdriveFolder = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=sharing';
       return NextResponse.redirect(gdriveFolder, 307);
     }
 
