@@ -5,7 +5,7 @@ import { GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { SyllabusHierarchyView } from '@/components/SyllabusHierarchyView';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export default async function SyllabusPage() {
   let topics: Array<{
