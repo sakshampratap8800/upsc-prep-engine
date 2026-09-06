@@ -44,6 +44,7 @@ interface TestData {
 
 export default function TestSeriesPage() {
   const [selectedMode, setSelectedMode] = useState<string>('prelims_gs1');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
   const [testData, setTestData] = useState<TestData | null>(null);
   const [loading, setLoading] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
@@ -56,6 +57,8 @@ export default function TestSeriesPage() {
   const [filterResult, setFilterResult] = useState<'all' | 'correct' | 'incorrect' | 'unattempted'>('all');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const yearsList = ['all', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016'];
 
   const testModes = [
     {
@@ -95,10 +98,10 @@ export default function TestSeriesPage() {
     },
   ];
 
-  const handleStartTest = async (modeId: string) => {
+  const handleStartTest = async (modeId: string = selectedMode, year: string = selectedYear) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/test-series?mode=${modeId}`);
+      const res = await fetch(`/api/test-series?mode=${modeId}&year=${year}`);
       const data = await res.json();
       if (data.success) {
         setTestData(data);
@@ -233,19 +236,57 @@ export default function TestSeriesPage() {
             ))}
           </div>
 
+          {/* Year / Paper Filter Selector */}
+          <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">Paper Source & Year Selection</h4>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Choose between a full randomized simulation across 10 years or a specific official year's paper.
+                </p>
+              </div>
+              <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:text-stone-300">
+                {selectedYear === 'all' ? '🎲 Random Mock (All Years)' : `📜 Official ${selectedYear} Paper`}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {yearsList.map((yr) => (
+                <button
+                  key={yr}
+                  onClick={() => setSelectedYear(yr)}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                    selectedYear === yr
+                      ? 'bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 shadow-sm ring-2 ring-stone-900/20 dark:ring-amber-400/40'
+                      : 'border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:border-stone-300'
+                  }`}
+                >
+                  {yr === 'all' ? '✨ All Years (Random Mock)' : `${yr} Paper`}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-900 dark:bg-stone-950 text-white p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-widest text-stone-400">Exam Mode</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-stone-400">Selected Simulation</span>
+                <span className="rounded bg-stone-800 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                  {selectedYear === 'all' ? 'Random Mix' : `Official ${selectedYear}`}
+                </span>
+              </div>
               <h3 className="text-xl font-bold">
-                {testModes.find((m) => m.id === selectedMode)?.name}
+                {testModes.find((m) => m.id === selectedMode)?.name} {selectedYear !== 'all' ? `(${selectedYear})` : ''}
               </h3>
               <p className="text-sm text-stone-300 dark:text-stone-400">
-                Questions are randomly sampled from the master repository across recent UPSC CSE exam cycles.
+                {selectedYear === 'all'
+                  ? 'Questions are randomly sampled from the master repository across recent UPSC CSE exam cycles.'
+                  : `Full official ${selectedYear} examination paper in exact question sequence under timed test conditions.`}
               </p>
             </div>
 
             <button
-              onClick={() => handleStartTest(selectedMode)}
+              onClick={() => handleStartTest(selectedMode, selectedYear)}
               disabled={loading}
               className="inline-flex items-center gap-2.5 rounded-xl bg-white dark:bg-stone-100 px-8 py-3.5 text-sm font-bold text-stone-900 hover:bg-stone-100 dark:hover:bg-white disabled:opacity-50 transition cursor-pointer shadow-sm shrink-0"
             >
