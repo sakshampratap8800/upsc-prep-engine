@@ -51,19 +51,19 @@ export default function ImportPage() {
           const isLoading = loading === item.type;
 
           return (
-            <div key={item.type} className="rounded-xl border border-stone-200 bg-white p-6">
+            <div key={item.type} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs transition-colors">
               <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-stone-100 p-2.5">
-                  <Icon className="h-5 w-5 text-stone-600" />
+                <div className="rounded-lg bg-stone-100 dark:bg-stone-800 p-2.5">
+                  <Icon className="h-5 w-5 text-stone-600 dark:text-stone-300" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-stone-900">{item.label}</h3>
-                  <p className="mt-1 text-xs text-stone-500">{item.desc}</p>
+                  <h3 className="font-semibold text-stone-900 dark:text-stone-100">{item.label}</h3>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 leading-relaxed">{item.desc}</p>
 
                   <button
                     onClick={() => runImport(item.type)}
                     disabled={loading !== null}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-medium text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     {isLoading ? (
                       <><Loader2 className="h-4 w-4 animate-spin" /> Importing...</>
@@ -73,18 +73,18 @@ export default function ImportPage() {
                   </button>
 
                   {result && (
-                    <div className={`mt-4 rounded-lg p-3 ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <div className={`mt-4 rounded-lg p-3 ${result.success ? 'bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/60' : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60'}`}>
                       <div className="flex items-center gap-2">
                         {result.success ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                         ) : (
-                          <XCircle className="h-4 w-4 text-red-600" />
+                          <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                         )}
-                        <span className={`text-sm font-medium ${result.success ? 'text-green-800' : 'text-red-800'}`}>
+                        <span className={`text-sm font-medium ${result.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                           {result.success ? 'Import completed' : 'Import had errors'}
                         </span>
                       </div>
-                      <pre className="mt-2 max-h-40 overflow-auto text-xs text-stone-600">
+                      <pre className="mt-2 max-h-40 overflow-auto text-xs text-stone-600 dark:text-stone-300 bg-black/5 dark:bg-black/30 p-2 rounded">
                         {JSON.stringify(result, null, 2)}
                       </pre>
                     </div>

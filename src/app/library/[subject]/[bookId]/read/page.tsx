@@ -38,25 +38,25 @@ export default async function ReadBookPage({ params }: Props) {
               href={`/api/pdf/${book.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 shadow-sm hover:bg-stone-50 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3.5 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-300 shadow-xs hover:bg-stone-50 dark:hover:bg-stone-700 transition cursor-pointer"
             >
-              <ExternalLink className="h-3.5 w-3.5 text-stone-500" />
+              <ExternalLink className="h-3.5 w-3.5 text-stone-500 dark:text-stone-400" />
               Pop-out Tab
             </a>
             <a
               href={GDRIVE_FOLDER_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 shadow-sm hover:bg-stone-50 transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3.5 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-300 shadow-xs hover:bg-stone-50 dark:hover:bg-stone-700 transition cursor-pointer"
             >
-              <ExternalLink className="h-3.5 w-3.5 text-stone-500" />
+              <ExternalLink className="h-3.5 w-3.5 text-stone-500 dark:text-stone-400" />
               Open Drive
             </a>
           </div>
         }
       />
 
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden h-[calc(100vh-180px)]">
+      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs overflow-hidden h-[calc(100vh-180px)]">
         <iframe
           src={`/api/pdf/${book.id}#toolbar=1&navpanes=0`}
           className="w-full h-full border-none"

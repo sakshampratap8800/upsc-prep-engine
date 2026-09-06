@@ -136,21 +136,21 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Action Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-xs transition-colors">
         <div className="flex items-center gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 font-bold text-white text-lg shadow-sm">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 dark:bg-stone-800 font-bold text-white text-lg shadow-xs">
             {chapter.number}
           </span>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-stone-900">{chapter.title}</h1>
+              <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100">{chapter.title}</h1>
               {hasSavedNotes && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                   <BookmarkCheck className="h-3.5 w-3.5" /> Saved in Database
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               {chapter.book.subject.name} • Class {chapter.book.className} • {chapter.book.title}
             </p>
           </div>

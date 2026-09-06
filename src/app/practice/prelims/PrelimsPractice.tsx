@@ -127,10 +127,10 @@ export default function PrelimsPractice({
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-lg font-medium text-stone-700">
+        <p className="text-lg font-medium text-stone-700 dark:text-stone-300">
           No Prelims questions found.
         </p>
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
           Try selecting a different year or import some PYQs first.
         </p>
       </div>
@@ -142,35 +142,35 @@ export default function PrelimsPractice({
     const pct = questions.length > 0 ? Math.round((totalCorrect / questions.length) * 100) : 0;
     return (
       <div className="mx-auto max-w-xl space-y-6 py-8">
-        <div className="rounded-xl border border-stone-200 bg-white p-8 text-center">
+        <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-8 text-center shadow-xs">
           <Trophy className="mx-auto h-12 w-12 text-amber-500" />
-          <h2 className="mt-4 text-2xl font-bold text-stone-900">
+          <h2 className="mt-4 text-2xl font-bold text-stone-900 dark:text-stone-100">
             Practice Complete!
           </h2>
-          <p className="mt-2 text-stone-500">
+          <p className="mt-2 text-stone-500 dark:text-stone-400">
             Here&apos;s how you performed
           </p>
 
           <div className="mt-6 grid grid-cols-3 gap-4">
-            <div className="rounded-lg bg-stone-50 p-4">
-              <p className="text-2xl font-bold text-stone-900">{totalAnswered}</p>
-              <p className="text-xs text-stone-500">Attempted</p>
+            <div className="rounded-lg bg-stone-50 dark:bg-stone-800 p-4">
+              <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{totalAnswered}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Attempted</p>
             </div>
-            <div className="rounded-lg bg-green-50 p-4">
-              <p className="text-2xl font-bold text-green-700">{totalCorrect}</p>
-              <p className="text-xs text-green-600">Correct</p>
+            <div className="rounded-lg bg-green-50 dark:bg-green-950/40 p-4">
+              <p className="text-2xl font-bold text-green-700 dark:text-green-300">{totalCorrect}</p>
+              <p className="text-xs text-green-600 dark:text-green-400">Correct</p>
             </div>
-            <div className="rounded-lg bg-red-50 p-4">
-              <p className="text-2xl font-bold text-red-700">
+            <div className="rounded-lg bg-red-50 dark:bg-red-950/40 p-4">
+              <p className="text-2xl font-bold text-red-700 dark:text-red-300">
                 {totalAnswered - totalCorrect}
               </p>
-              <p className="text-xs text-red-600">Incorrect</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Incorrect</p>
             </div>
           </div>
 
           <div className="mt-6">
-            <div className="text-4xl font-bold text-stone-900">{pct}%</div>
-            <p className="text-sm text-stone-500">Score</p>
+            <div className="text-4xl font-bold text-stone-900 dark:text-stone-100">{pct}%</div>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Score</p>
           </div>
 
           {/* Per-question breakdown */}
@@ -181,20 +181,20 @@ export default function PrelimsPractice({
                 <button
                   key={question.id}
                   onClick={() => { setShowSummary(false); setCurrent(i); }}
-                  className="flex w-full items-center gap-3 rounded-lg border border-stone-100 px-4 py-2 text-left transition-colors hover:bg-stone-50"
+                  className="flex w-full items-center gap-3 rounded-lg border border-stone-100 dark:border-stone-800 px-4 py-2 text-left transition-colors hover:bg-stone-50 dark:hover:bg-stone-800"
                 >
-                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium
-                    {s.isCorrect === true ? 'bg-green-100 text-green-700' : s.isCorrect === false ? 'bg-red-100 text-red-700' : 'bg-stone-100 text-stone-500'}"
+                  <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                    s.isCorrect === true ? 'bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-300' : s.isCorrect === false ? 'bg-red-100 dark:bg-red-900/60 text-red-700 dark:text-red-300' : 'bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400'}`}
                   >
                     {s.isCorrect === true ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                     ) : s.isCorrect === false ? (
-                      <XCircle className="h-4 w-4 text-red-600" />
+                      <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     ) : (
                       <span>{i + 1}</span>
                     )}
                   </span>
-                  <span className="flex-1 truncate text-sm text-stone-700">
+                  <span className="flex-1 truncate text-sm text-stone-700 dark:text-stone-300">
                     Q{i + 1}. {question.questionText.slice(0, 80)}
                     {question.questionText.length > 80 ? '…' : ''}
                   </span>
@@ -207,13 +207,13 @@ export default function PrelimsPractice({
           <div className="mt-8 flex justify-center gap-3">
             <button
               onClick={() => setShowSummary(false)}
-              className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 px-4 py-2 text-sm font-medium text-stone-700 dark:text-stone-300 transition-colors hover:bg-stone-50 dark:hover:bg-stone-800 cursor-pointer"
             >
               Review Answers
             </button>
             <a
               href={selectedYear ? `/practice/prelims?year=${selectedYear}` : '/practice/prelims'}
-              className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
+              className="rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-medium text-white dark:text-stone-900 transition-colors hover:bg-stone-800 dark:hover:bg-stone-200"
             >
               <RotateCcw className="mr-1.5 inline h-4 w-4" />
               New Session
@@ -236,8 +236,8 @@ export default function PrelimsPractice({
           href="/practice/prelims"
           className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
             !selectedYear
-              ? 'bg-stone-900 text-white'
-              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold'
+              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
           }`}
         >
           All Years
@@ -248,8 +248,8 @@ export default function PrelimsPractice({
             href={`/practice/prelims?year=${y}`}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               selectedYear === y
-                ? 'bg-stone-900 text-white'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold'
+                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
             }`}
           >
             {y}
@@ -259,7 +259,7 @@ export default function PrelimsPractice({
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs text-stone-500">
+        <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
           <span>
             Question {current + 1} of {questions.length}
           </span>
@@ -267,23 +267,23 @@ export default function PrelimsPractice({
             {totalCorrect}/{totalAnswered} correct
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
           <div
-            className="h-full rounded-full bg-stone-900 transition-all duration-300"
+            className="h-full rounded-full bg-stone-900 dark:bg-amber-400 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Question card */}
-      <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs transition-colors">
         {/* Meta */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+          <span className="rounded bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">
             {q.year}
           </span>
           {q.questionNumber && (
-            <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+            <span className="rounded bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">
               Q{q.questionNumber}
             </span>
           )}
@@ -291,10 +291,10 @@ export default function PrelimsPractice({
             <span
               className={`rounded px-2 py-0.5 text-xs font-medium ${
                 q.difficulty === 'Easy'
-                  ? 'bg-green-50 text-green-700'
+                  ? 'bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-850'
                   : q.difficulty === 'Hard'
-                    ? 'bg-red-50 text-red-700'
-                    : 'bg-amber-50 text-amber-700'
+                    ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-850'
+                    : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-850'
               }`}
             >
               {q.difficulty}
@@ -303,7 +303,7 @@ export default function PrelimsPractice({
         </div>
 
         {/* Question text */}
-        <p className="whitespace-pre-wrap text-stone-900 leading-relaxed">
+        <p className="whitespace-pre-wrap text-stone-900 dark:text-stone-100 leading-relaxed font-medium">
           {q.questionText}
         </p>
 
@@ -322,23 +322,23 @@ export default function PrelimsPractice({
                     opt.toLowerCase().includes(state.correctAnswer.toLowerCase());
 
               let optClasses =
-                'w-full rounded-lg border px-4 py-3 text-left text-sm transition-all ';
+                'w-full rounded-xl border px-4 py-3 text-left text-sm transition-all cursor-pointer ';
 
               if (state.isSubmitted) {
                 if (isCorrectOpt) {
                   optClasses +=
-                    'border-green-300 bg-green-50 text-green-900 font-medium';
+                    'border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-bold ';
                 } else if (isSelected && !isCorrectOpt) {
-                  optClasses += 'border-red-300 bg-red-50 text-red-900';
+                  optClasses += 'border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200 ';
                 } else {
-                  optClasses += 'border-stone-100 bg-stone-50 text-stone-400';
+                  optClasses += 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 text-stone-400 dark:text-stone-500 ';
                 }
               } else if (isSelected) {
                 optClasses +=
-                  'border-stone-900 bg-stone-50 text-stone-900 ring-1 ring-stone-900';
+                  'border-stone-900 dark:border-amber-400 bg-stone-50 dark:bg-amber-950/30 text-stone-900 dark:text-amber-200 ring-1 ring-stone-900 dark:ring-amber-400 font-semibold ';
               } else {
                 optClasses +=
-                  'border-stone-200 text-stone-700 hover:border-stone-300 hover:bg-stone-50';
+                  'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800/60 ';
               }
 
               return (
@@ -354,10 +354,10 @@ export default function PrelimsPractice({
                 >
                   <span className="flex items-center gap-3">
                     {state.isSubmitted && isCorrectOpt && (
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
                     )}
                     {state.isSubmitted && isSelected && !isCorrectOpt && (
-                      <XCircle className="h-4 w-4 flex-shrink-0 text-red-600" />
+                      <XCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
                     )}
                     <span>{opt}</span>
                   </span>
@@ -377,7 +377,7 @@ export default function PrelimsPractice({
               disabled={state.isSubmitted}
               placeholder="Write your answer here…"
               rows={6}
-              className="w-full rounded-lg border border-stone-200 p-4 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 disabled:bg-stone-50"
+              className="w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 p-4 text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:border-stone-400 dark:focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-stone-400 disabled:bg-stone-50 dark:disabled:bg-stone-850"
             />
           </div>
         )}
@@ -385,29 +385,29 @@ export default function PrelimsPractice({
         {/* Feedback after submission */}
         {state.isSubmitted && (
           <div
-            className={`mt-4 rounded-lg p-4 ${
+            className={`mt-4 rounded-xl p-4 ${
               state.isCorrect
-                ? 'border border-green-200 bg-green-50'
+                ? 'border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/40'
                 : state.isCorrect === false
-                  ? 'border border-red-200 bg-red-50'
-                  : 'border border-stone-200 bg-stone-50'
+                  ? 'border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40'
+                  : 'border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50'
             }`}
           >
             <div className="flex items-center gap-2">
               {state.isCorrect ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               ) : state.isCorrect === false ? (
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               ) : (
-                <Clock className="h-5 w-5 text-stone-500" />
+                <Clock className="h-5 w-5 text-stone-500 dark:text-stone-400" />
               )}
               <span
-                className={`font-medium ${
+                className={`font-semibold text-sm ${
                   state.isCorrect
-                    ? 'text-green-800'
+                    ? 'text-green-800 dark:text-green-200'
                     : state.isCorrect === false
-                      ? 'text-red-800'
-                      : 'text-stone-700'
+                      ? 'text-red-800 dark:text-red-200'
+                      : 'text-stone-700 dark:text-stone-200'
                 }`}
               >
                 {state.isCorrect
@@ -418,17 +418,17 @@ export default function PrelimsPractice({
               </span>
             </div>
             {state.correctAnswer && !state.isCorrect && (
-              <p className="mt-2 text-sm text-stone-700">
-                Correct answer: <strong>{state.correctAnswer}</strong>
+              <p className="mt-2 text-sm text-stone-700 dark:text-stone-200">
+                Correct answer: <strong className="text-stone-900 dark:text-white">{state.correctAnswer}</strong>
               </p>
             )}
             {state.explanation && (
-              <p className="mt-2 text-sm text-stone-600">{state.explanation}</p>
+              <p className="mt-2 text-sm text-stone-600 dark:text-stone-300 leading-relaxed">{state.explanation}</p>
             )}
             {state.isCorrect === false && (
               <button
                 onClick={handleReportError}
-                className="mt-3 text-xs text-stone-400 underline hover:text-stone-600"
+                className="mt-3 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 underline cursor-pointer"
               >
                 Report incorrect answer key
               </button>
@@ -441,7 +441,7 @@ export default function PrelimsPractice({
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
-            className="mt-5 w-full rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-5 w-full rounded-xl bg-stone-900 dark:bg-stone-100 px-4 py-2.5 text-sm font-bold text-white dark:text-stone-900 transition-colors hover:bg-stone-800 dark:hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
           >
             {submitting ? 'Submitting…' : 'Submit Answer'}
           </button>
@@ -453,7 +453,7 @@ export default function PrelimsPractice({
         <button
           onClick={() => setCurrent((c) => Math.max(0, c - 1))}
           disabled={current === 0}
-          className="flex items-center gap-1 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-2 text-sm font-medium text-stone-700 dark:text-stone-300 transition-colors hover:bg-stone-50 dark:hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
@@ -465,16 +465,16 @@ export default function PrelimsPractice({
             const s = states[i];
             let dotClass = 'h-2.5 w-2.5 rounded-full transition-all cursor-pointer ';
             if (i === current) {
-              dotClass += 'ring-2 ring-stone-400 ring-offset-1 ';
+              dotClass += 'ring-2 ring-stone-400 dark:ring-amber-400 ring-offset-1 ';
             }
             if (s.isCorrect === true) {
               dotClass += 'bg-green-500';
             } else if (s.isCorrect === false) {
               dotClass += 'bg-red-500';
             } else if (s.isSubmitted) {
-              dotClass += 'bg-stone-400';
+              dotClass += 'bg-stone-400 dark:bg-stone-600';
             } else {
-              dotClass += 'bg-stone-200';
+              dotClass += 'bg-stone-200 dark:bg-stone-700';
             }
             return (
               <button
@@ -490,14 +490,14 @@ export default function PrelimsPractice({
         {current === questions.length - 1 ? (
           <button
             onClick={() => setShowSummary(true)}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
+            className="rounded-xl bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-bold text-white dark:text-stone-900 transition-colors hover:bg-stone-800 dark:hover:bg-white cursor-pointer"
           >
             Finish
           </button>
         ) : (
           <button
             onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
-            className="flex items-center gap-1 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+            className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-4 py-2 text-sm font-medium text-stone-700 dark:text-stone-300 transition-colors hover:bg-stone-50 dark:hover:bg-stone-700 cursor-pointer"
           >
             Next
             <ChevronRight className="h-4 w-4" />

@@ -51,19 +51,19 @@ export default async function ErrorLogPage() {
       ) : (
         <div className="space-y-3">
           {errors.map((err) => (
-            <div key={err.id} className="rounded-lg border border-stone-200 bg-white p-4">
+            <div key={err.id} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs transition-colors">
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                <span className="rounded-md bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300">
                   {errorTypeLabels[err.errorType] || err.errorType}
                 </span>
-                <span className="text-xs text-stone-500">{new Date(err.createdAt).toLocaleDateString()}</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">{new Date(err.createdAt).toLocaleDateString()}</span>
               </div>
               {err.description && (
-                <p className="mt-2 text-sm text-stone-700">{err.description}</p>
+                <p className="mt-2 text-sm text-stone-700 dark:text-stone-200">{err.description}</p>
               )}
               {err.answerAttempt?.pyq && (
-                <p className="mt-2 text-xs text-stone-500">
-                  {err.answerAttempt.pyq.examStage} {err.answerAttempt.pyq.year} \u2022 {err.answerAttempt.pyq.paper}
+                <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+                  {err.answerAttempt.pyq.examStage} {err.answerAttempt.pyq.year} &bull; {err.answerAttempt.pyq.paper}
                 </p>
               )}
             </div>
