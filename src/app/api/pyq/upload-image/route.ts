@@ -47,22 +47,32 @@ export async function POST(req: NextRequest) {
     const qNum = pyq.questionNumber ? `q${pyq.questionNumber}` : `id${pyq.id}`;
     const fileName = `pyq_${pyq.year}_${cleanStage}_${cleanPaper}_${qNum}.${ext}`;
 
-    // Target directories:
-    // 1. User's designated drive folder: E:\books\images\pyqs\
-    const booksImagesDir = path.resolve('E:/books/images/pyqs');
-    if (!fs.existsSync(booksImagesDir)) {
-      fs.mkdirSync(booksImagesDir, { recursive: true });
+    // 1. Upload directly to Google Drive `images` folder (Cloud Storage)
+    let publicUrl = `/pyq-images/${fileName}`;
+    try {
+      const { uploadImageToDrive } = await import('@/lib/gdrive');
+      const driveUpload = await uploadImageToDrive(fileName, buffer, file.type || 'image/png');
+      if (driveUpload && driveUpload.cdnUrl) {
+        publicUrl = driveUpload.cdnUrl;
+        console.log('Successfully uploaded diagram to Google Drive:', driveUpload.cdnUrl);
+      }
+    } catch (gdriveErr) {
+      console.warn('Google Drive direct upload skipped or failed:', gdriveErr);
     }
-    fs.writeFileSync(path.join(booksImagesDir, fileName), buffer);
 
-    // 2. Next.js public directory for immediate serving: e:\books\upsc-app\public\pyq-images\
-    const publicImagesDir = path.resolve(process.cwd(), 'public/pyq-images');
-    if (!fs.existsSync(publicImagesDir)) {
-      fs.mkdirSync(publicImagesDir, { recursive: true });
+    // 2. Save local backups if local folders exist
+    try {
+      const booksImagesDir = path.resolve('E:/books/images/pyqs');
+      if (fs.existsSync(path.resolve('E:/books'))) {
+        if (!fs.existsSync(booksImagesDir)) fs.mkdirSync(booksImagesDir, { recursive: true });
+        fs.writeFileSync(path.join(booksImagesDir, fileName), buffer);
+      }
+      const publicImagesDir = path.resolve(process.cwd(), 'public/pyq-images');
+      if (!fs.existsSync(publicImagesDir)) fs.mkdirSync(publicImagesDir, { recursive: true });
+      fs.writeFileSync(path.join(publicImagesDir, fileName), buffer);
+    } catch (localErr) {
+      // Ignored on serverless Vercel
     }
-    fs.writeFileSync(path.join(publicImagesDir, fileName), buffer);
-
-    const publicUrl = `/pyq-images/${fileName}`;
 
     // Update database (use raw SQL update for 100% resilience across all client versions)
     const rangeStartStr = formData.get('rangeStart') as string | null;
