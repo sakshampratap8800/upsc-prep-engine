@@ -8,12 +8,14 @@ import {
   ExternalLink,
   Copy,
   Check,
+  FileQuestion,
 } from 'lucide-react';
 
 interface SubTopic {
   id: number;
   name: string;
   paper: string;
+  _count?: { pyqs: number };
 }
 
 interface ParentTopic {
@@ -315,14 +317,25 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                             )}
                           </button>
 
-                          <Link
-                            href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
-                            title="Search PYQs and Books for this topic"
-                            className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            <span className="hidden sm:inline">Search PYQs</span>
-                          </Link>
+                          {child._count && child._count.pyqs > 0 ? (
+                            <Link
+                              href={`/pyq?topicId=${child.id}`}
+                              title={`View all ${child._count.pyqs} mapped PYQs for this topic`}
+                              className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
+                            >
+                              <FileQuestion className="h-3.5 w-3.5 text-amber-400" />
+                              <span>{child._count.pyqs} {child._count.pyqs === 1 ? 'PYQ' : 'PYQs'}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
+                              title="Search PYQs and Books for this topic"
+                              className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              <span className="hidden sm:inline">Search PYQs</span>
+                            </Link>
+                          )}
                         </div>
                       </div>
                     );
@@ -359,14 +372,25 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
                             )}
                           </button>
 
-                          <Link
-                            href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
-                            title="Search PYQs and Books for this topic"
-                            className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            <span className="hidden sm:inline">Search PYQs</span>
-                          </Link>
+                          {child._count && child._count.pyqs > 0 ? (
+                            <Link
+                              href={`/pyq?topicId=${child.id}`}
+                              title={`View all ${child._count.pyqs} mapped PYQs for this topic`}
+                              className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
+                            >
+                              <FileQuestion className="h-3.5 w-3.5 text-amber-400" />
+                              <span>{child._count.pyqs} {child._count.pyqs === 1 ? 'PYQ' : 'PYQs'}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/search?q=${encodeURIComponent(parsed.title.replace(/^\d+\.\s*/, '').slice(0, 80))}`}
+                              title="Search PYQs and Books for this topic"
+                              className="flex items-center gap-1.5 rounded-lg bg-[#1c1917] dark:bg-[#171717] text-white px-2.5 py-1 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-black transition shadow-xs"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              <span className="hidden sm:inline">Search PYQs</span>
+                            </Link>
+                          )}
                         </div>
                       </div>
 

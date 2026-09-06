@@ -7,7 +7,7 @@ import { FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 
 interface Props {
-  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string; openYear?: string }>;
+  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string; openYear?: string; topicId?: string }>;
 }
 
 type PYQListItem = {
@@ -26,13 +26,14 @@ type YearStat = { year: number; _count: { id: number } };
 type StageStat = { examStage: string; _count: { id: number } };
 type YearStagePaperStat = { year: number; examStage: string; paper: string; _count: { id: number } };
 
-function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number }) {
+function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number; topicId?: number }) {
   const params = new URLSearchParams();
   if (filters.stage) params.set('stage', filters.stage);
   if (filters.year) params.set('year', String(filters.year));
   if (filters.paper) params.set('paper', filters.paper);
   if (filters.page && filters.page > 1) params.set('page', String(filters.page));
   if (filters.openYear) params.set('openYear', String(filters.openYear));
+  if (filters.topicId) params.set('topicId', String(filters.topicId));
 
   const query = params.toString();
   return query ? `/pyq?${query}` : '/pyq';
@@ -67,6 +68,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
   const paper = sp.paper || '';
   const page = sp.page ? parseInt(sp.page, 10) : 1;
   const openYear = sp.openYear ? parseInt(sp.openYear, 10) : 0;
+  const topicId = sp.topicId ? parseInt(sp.topicId, 10) : 0;
   const perPage = 20;
 
   let pyqs: PYQListItem[] = [];
@@ -75,14 +77,18 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
   let yearStats: YearStat[] = [];
   let stageStats: StageStat[] = [];
   let yearStagePaperStats: YearStagePaperStat[] = [];
+  let activeTopicName: string | null = null;
 
   try {
     const where: Record<string, unknown> = {};
     if (stage) where.examStage = stage;
     if (year) where.year = year;
     if (paper) where.paper = paper;
+    if (topicId) {
+      where.topics = { some: { id: topicId } };
+    }
 
-    const [stats, pyqResults, count] = await Promise.all([
+    const [stats, pyqResults, count, activeTopic] = await Promise.all([
       getCachedPyqStats(),
       prisma.pYQ.findMany({
         where,
@@ -101,12 +107,17 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
         },
       }),
       prisma.pYQ.count({ where }),
+      topicId ? prisma.syllabusTopic.findUnique({ where: { id: topicId }, select: { name: true, paper: true } }) : null,
     ]);
 
     totalCountRaw = stats.totalCountRaw;
     yearStats = stats.yearStats;
     stageStats = stats.stageStats;
     yearStagePaperStats = stats.yearStagePaperStats;
+
+    if (activeTopic) {
+      activeTopicName = `[${activeTopic.paper}] ${activeTopic.name}`;
+    }
 
     pyqs = pyqResults;
     totalCount = count;
@@ -129,6 +140,24 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
         title="PYQ Browser"
         description={`${totalCountRaw} Previous Year Questions • 2016–2026 • Prelims, Mains, Essay, Optionals`}
       />
+
+      {activeTopicName && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-950 dark:text-amber-200 shadow-xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <span className="font-bold shrink-0">Topic:</span>
+            <span className="font-medium line-clamp-2 sm:line-clamp-1">{activeTopicName}</span>
+            <span className="shrink-0 rounded-md bg-amber-200 dark:bg-amber-900/80 px-2 py-0.5 text-xs font-bold text-amber-900 dark:text-amber-200">
+              {totalCount} {totalCount === 1 ? 'PYQ' : 'PYQs'}
+            </span>
+          </div>
+          <Link
+            href="/pyq"
+            className="self-start sm:self-auto shrink-0 rounded-lg bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 border border-amber-200 dark:border-amber-800 transition"
+          >
+            Clear Topic Filter ✕
+          </Link>
+        </div>
+      )}
 
       {totalCountRaw === 0 ? (
         <EmptyState

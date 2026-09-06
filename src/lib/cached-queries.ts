@@ -65,13 +65,18 @@ export const getCachedSyllabusHierarchy = unstable_cache(
     return prisma.syllabusTopic.findMany({
       where: { parentId: null },
       include: {
-        children: { orderBy: { id: 'asc' } },
+        children: {
+          orderBy: { id: 'asc' },
+          include: {
+            _count: { select: { pyqs: true } },
+          },
+        },
         _count: { select: { pyqs: true } },
       },
       orderBy: { id: 'asc' },
     });
   },
-  ['syllabus-hierarchy-tree-v2'],
+  ['syllabus-hierarchy-tree-v3'],
   { revalidate: 3600, tags: ['syllabus'] }
 );
 

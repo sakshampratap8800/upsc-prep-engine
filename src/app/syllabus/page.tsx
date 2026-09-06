@@ -11,7 +11,7 @@ export default async function SyllabusPage() {
     name: string;
     paper: string;
     description: string | null;
-    children: Array<{ id: number; name: string; paper: string }>;
+    children: Array<{ id: number; name: string; paper: string; _count?: { pyqs: number } }>;
     _count: { pyqs: number };
   }> = [];
 
