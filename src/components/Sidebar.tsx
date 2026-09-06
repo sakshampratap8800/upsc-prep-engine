@@ -35,7 +35,6 @@ const navItems: NavItem[] = [
   { label: 'Practice', href: '/practice', icon: Target },
   { label: 'Error Log', href: '/errors', icon: AlertCircle },
   { label: 'Search', href: '/search', icon: Search },
-  { label: 'Import Data', href: '/import', icon: Database },
   { label: 'Data Health', href: '/data-health', icon: Activity },
 ];
 

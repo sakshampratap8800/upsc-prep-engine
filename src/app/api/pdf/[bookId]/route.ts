@@ -28,7 +28,9 @@ export async function GET(
     }
 
     if (!fs.existsSync(targetPath)) {
-      return new NextResponse('PDF file not found on disk', { status: 404 });
+      // Fallback for Vercel / Cloud deployments: Redirect to Google Drive
+      const gdriveFolder = 'https://drive.google.com/drive/folders/1WM938D-obvqcgG1ubET5YfV6JWj58ZxJ?usp=drive_link';
+      return NextResponse.redirect(gdriveFolder, 307);
     }
 
     const stat = fs.statSync(targetPath);

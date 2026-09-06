@@ -34,8 +34,8 @@ export default async function LibraryPage() {
           title="No books imported yet"
           description="Import your NCERT PDFs to start building your library."
           action={
-            <Link href="/import" className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800">
-              Import NCERTs
+            <Link href="/" className="rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-medium text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200">
+              Go to Dashboard
             </Link>
           }
         />

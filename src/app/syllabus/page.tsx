@@ -35,10 +35,10 @@ export default async function SyllabusPage() {
           description="Click below to import and initialize the structured UPSC syllabus."
           action={
             <Link
-              href="/import"
+              href="/"
               className="rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-medium text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition"
             >
-              Import Syllabus
+              Go to Dashboard
             </Link>
           }
         />

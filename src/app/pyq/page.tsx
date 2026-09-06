@@ -136,8 +136,8 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           title="No PYQs imported yet"
           description="Import your PYQ PDFs to start analyzing previous year questions."
           action={
-            <Link href="/import" className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800">
-              Import PYQs
+            <Link href="/" className="rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2 text-sm font-medium text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200">
+              Go to Dashboard
             </Link>
           }
         />

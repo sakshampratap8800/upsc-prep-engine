@@ -33,9 +33,9 @@ export default async function DashboardPage() {
       {stats.books === 0 && stats.pyqs === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-stone-200 bg-white p-12 text-center">
           <h2 className="text-xl font-bold text-stone-700">Welcome to UPSC Prep Engine</h2>
-          <p className="mt-2 text-sm text-stone-500">Your data hasn't been imported yet. Start by importing your study materials.</p>
-          <Link href="/import" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800 transition-colors">
-            Import Data
+          <p className="mt-2 text-sm text-stone-500">Explore textbooks, PYQ archive, and your 18-month roadmap.</p>
+          <Link href="/library" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800 transition-colors">
+            Go to Library
           </Link>
         </div>
       ) : (
