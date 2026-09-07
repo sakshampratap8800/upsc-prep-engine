@@ -7,6 +7,7 @@ export interface RetrievedPYQ {
   paper: string;
   questionNumber: number | null;
   questionText: string;
+  contentJson?: string | null;
   options: string[];
   correctAnswer: string | null;
   explanation: string | null;
@@ -66,6 +67,7 @@ function formatPYQs(raw: any[]): RetrievedPYQ[] {
     paper: q.paper,
     questionNumber: q.questionNumber,
     questionText: q.questionText,
+    contentJson: q.contentJson,
     options: q.optionsJson ? JSON.parse(q.optionsJson) : [],
     correctAnswer: q.correctAnswer,
     explanation: q.explanation

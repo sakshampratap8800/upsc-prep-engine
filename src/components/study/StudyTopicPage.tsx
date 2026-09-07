@@ -3,17 +3,19 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { LearnThisTopicPanel } from './LearnThisTopicPanel';
+import { FormattedQuestionText } from '@/components/FormattedQuestionText';
 import {
   ChevronRight,
   Sparkles,
   BookOpen,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   FileQuestion,
-  HelpCircle,
   Layers,
-  ArrowLeft,
-  FileText
+  ExternalLink,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface StudyTopicPageProps {
@@ -33,10 +35,140 @@ interface StudyTopicPageProps {
     paper: string;
     questionNumber?: number | null;
     questionText: string;
+    contentJson?: string | null;
     options: string[];
     correctAnswer: string | null;
     explanation: string | null;
   }>;
+}
+
+function TopicPYQCard({ q }: { q: NonNullable<StudyTopicPageProps['pyqs']>[number] }) {
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showAnswer, setShowAnswer] = useState<boolean>(false);
+
+  // Extract option letter like "C" from string like "C", "(c)", "Option C"
+  const getOptionLetter = (str: string) => {
+    const match = str.match(/[\(]?([A-D])[\)]?/i);
+    return match ? match[1].toUpperCase() : '';
+  };
+
+  const correctLetter = q.correctAnswer ? getOptionLetter(q.correctAnswer) : '';
+
+  const handleSelectOption = (opt: string) => {
+    setSelectedOption(opt);
+    setShowAnswer(true);
+  };
+
+  return (
+    <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 space-y-4 shadow-xs">
+      {/* Header with metadata and link */}
+      <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-stone-500">
+          <span className="bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-md">{q.year}</span>
+          <span>•</span>
+          <span>{q.examStage}</span>
+          <span>•</span>
+          <span>{q.paper}</span>
+          {q.questionNumber && <span>• Q.{q.questionNumber}</span>}
+        </div>
+        <Link
+          href={`/pyq/${q.id}`}
+          target="_blank"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+        >
+          <span>Full Question</span>
+          <ExternalLink className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      {/* Question Text */}
+      <div className="text-xs md:text-sm text-stone-900 dark:text-stone-100">
+        <FormattedQuestionText text={q.questionText} contentJson={q.contentJson} />
+      </div>
+
+      {/* Options List */}
+      {q.options && q.options.length > 0 && (
+        <div className="space-y-2 pt-1">
+          {q.options.map((opt, idx) => {
+            const letter = String.fromCharCode(65 + idx); // A, B, C, D
+            const optLetter = getOptionLetter(opt) || letter;
+            const isSelected = selectedOption === opt;
+            const isCorrect = correctLetter === optLetter || correctLetter === letter;
+
+            let btnStyle = 'border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200';
+            if (showAnswer) {
+              if (isCorrect) {
+                btnStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-medium ring-1 ring-emerald-500';
+              } else if (isSelected && !isCorrect) {
+                btnStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 ring-1 ring-rose-500';
+              }
+            }
+
+            return (
+              <button
+                key={idx}
+                onClick={() => handleSelectOption(opt)}
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left text-xs md:text-sm transition cursor-pointer ${btnStyle}`}
+              >
+                <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-bold text-xs ${
+                  showAnswer && isCorrect
+                    ? 'bg-emerald-600 text-white'
+                    : showAnswer && isSelected && !isCorrect
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300'
+                }`}>
+                  {letter}
+                </span>
+                <span className="flex-1 pt-0.5 leading-relaxed">{opt}</span>
+                {showAnswer && isCorrect && <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />}
+                {showAnswer && isSelected && !isCorrect && <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Answer & Explanation Actions */}
+      <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800">
+        <button
+          onClick={() => setShowAnswer(!showAnswer)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition cursor-pointer"
+        >
+          {showAnswer ? <EyeOff className="h-4 w-4 text-amber-500" /> : <Eye className="h-4 w-4 text-amber-500" />}
+          {showAnswer ? 'Hide Answer & Explanation' : 'Show Answer & Explanation'}
+        </button>
+
+        {selectedOption && (
+          <span className={`text-xs font-bold ${
+            getOptionLetter(selectedOption) === correctLetter || correctLetter === String.fromCharCode(65 + q.options.indexOf(selectedOption))
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-rose-600 dark:text-rose-400'
+          }`}>
+            {(getOptionLetter(selectedOption) === correctLetter || correctLetter === String.fromCharCode(65 + q.options.indexOf(selectedOption))) ? '✓ Correct' : '✕ Incorrect'}
+          </span>
+        )}
+      </div>
+
+      {/* Answer & Explanation Details Box */}
+      {showAnswer && (
+        <div className="rounded-xl bg-stone-100/80 dark:bg-stone-800/60 p-4 border border-stone-200/80 dark:border-stone-700 space-y-2 text-xs">
+          <div className="flex items-center gap-2 font-bold text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Correct Answer: {q.correctAnswer || (correctLetter ? `Option ${correctLetter}` : 'N/A')}</span>
+          </div>
+          {q.explanation ? (
+            <p className="text-stone-700 dark:text-stone-300 leading-relaxed pt-1">
+              <strong>Explanation:</strong> {q.explanation}
+            </p>
+          ) : (
+            <p className="text-stone-500 dark:text-stone-400 italic pt-1">
+              Detailed explanation available on the full question page.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function StudyTopicPage({
@@ -210,29 +342,9 @@ export function StudyTopicPage({
         </div>
 
         {pyqs && pyqs.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {pyqs.map((q) => (
-              <div
-                key={q.id}
-                className="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/40 p-4 space-y-2"
-              >
-                <div className="flex items-center gap-2 text-[11px] font-bold text-stone-500">
-                  <span className="text-stone-900 dark:text-stone-100">{q.year}</span>
-                  <span>•</span>
-                  <span>{q.examStage}</span>
-                  <span>•</span>
-                  <span>{q.paper}</span>
-                  {q.questionNumber && <span>• Q.{q.questionNumber}</span>}
-                </div>
-                <p className="text-xs text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-line">
-                  {q.questionText}
-                </p>
-                {q.correctAnswer && (
-                  <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                    Correct Answer: {q.correctAnswer}
-                  </p>
-                )}
-              </div>
+              <TopicPYQCard key={q.id} q={q} />
             ))}
           </div>
         ) : (
@@ -260,3 +372,4 @@ export function StudyTopicPage({
     </div>
   );
 }
+
