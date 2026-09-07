@@ -77,22 +77,20 @@ async function handleUpdate(req: NextRequest) {
       const endQ = Math.max(applyPassageToRange.startQ, applyPassageToRange.endQ);
       const cleanPassage = passageText ? passageText.trim() : null;
 
-      await prisma.$executeRawUnsafe(
-        `UPDATE pyqs 
-         SET passageText = ? 
-         WHERE year = ? 
-           AND examStage = ? 
-           AND (paper = ? OR paper LIKE '%' || ? || '%')
-           AND questionNumber >= ? 
-           AND questionNumber <= ?`,
-        cleanPassage,
-        currentPyq.year,
-        currentPyq.examStage,
-        currentPyq.paper,
-        currentPyq.paper.includes('CSAT') ? 'CSAT' : currentPyq.paper,
-        startQ,
-        endQ
-      );
+      await prisma.pYQ.updateMany({
+        where: {
+          year: currentPyq.year,
+          examStage: currentPyq.examStage,
+          paper: currentPyq.paper,
+          questionNumber: {
+            gte: startQ,
+            lte: endQ,
+          },
+        },
+        data: {
+          passageText: cleanPassage,
+        },
+      });
     }
 
     // If image range is specified, update matching questions in the SAME year, stage, and paper
@@ -100,22 +98,20 @@ async function handleUpdate(req: NextRequest) {
       const startQ = Math.min(applyImageToRange.startQ, applyImageToRange.endQ);
       const endQ = Math.max(applyImageToRange.startQ, applyImageToRange.endQ);
 
-      await prisma.$executeRawUnsafe(
-        `UPDATE pyqs 
-         SET imageUrl = ? 
-         WHERE year = ? 
-           AND examStage = ? 
-           AND (paper = ? OR paper LIKE '%' || ? || '%')
-           AND questionNumber >= ? 
-           AND questionNumber <= ?`,
-        imageUrl,
-        currentPyq.year,
-        currentPyq.examStage,
-        currentPyq.paper,
-        currentPyq.paper.includes('CSAT') ? 'CSAT' : currentPyq.paper,
-        startQ,
-        endQ
-      );
+      await prisma.pYQ.updateMany({
+        where: {
+          year: currentPyq.year,
+          examStage: currentPyq.examStage,
+          paper: currentPyq.paper,
+          questionNumber: {
+            gte: startQ,
+            lte: endQ,
+          },
+        },
+        data: {
+          imageUrl: imageUrl,
+        },
+      });
     }
 
     const updated = await prisma.pYQ.findUnique({

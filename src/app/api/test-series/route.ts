@@ -120,6 +120,30 @@ export async function GET(req: Request) {
         });
         questions = raw.sort(() => Math.random() - 0.5).slice(0, Math.min(15, raw.length));
       }
+    } else if (mode === 'epfo_apfc') {
+      totalQuestions = 120;
+      durationMinutes = 120;
+      marksPerCorrect = 2.5;
+      negativeMarks = 0.833;
+
+      if (targetYear) {
+        title = `EPFO / APFC (${targetYear} Official Exam Paper)`;
+        const raw = await prisma.pYQ.findMany({
+          where: { 
+            examStage: { in: ['EPFO APFC', 'EPFO EO/AO'] },
+            year: targetYear 
+          },
+          orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
+          take: 120,
+        });
+        questions = raw;
+      } else {
+        title = 'EPFO / APFC (Full 120Q Randomized Mock Simulator)';
+        const raw = await prisma.pYQ.findMany({
+          where: { examStage: { in: ['EPFO APFC', 'EPFO EO/AO'] } },
+        });
+        questions = raw.sort(() => Math.random() - 0.5).slice(0, Math.min(120, raw.length));
+      }
     }
 
     const formatted = questions.map((q, idx) => ({
@@ -133,6 +157,9 @@ export async function GET(req: Request) {
       correctAnswer: q.correctAnswer,
       explanation: q.explanation,
       subjectArea: q.subjectArea,
+      passageText: q.passageText || null,
+      imageUrl: q.imageUrl || null,
+      contentJson: q.contentJson || null,
     }));
 
     return NextResponse.json({

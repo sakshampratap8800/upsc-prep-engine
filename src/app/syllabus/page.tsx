@@ -26,8 +26,8 @@ export default async function SyllabusPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="UPSC CSE Syllabus"
-        description="Complete official syllabus organized with hierarchical units, sub-clauses, thinkers, and direct PYQ linkages."
+        title="Official Syllabus (UPSC CSE & EPFO APFC)"
+        description="Comprehensive official syllabus organized with hierarchical units, sub-clauses, key topics, and direct PYQ linkages."
       />
 
       {topics.length === 0 ? (

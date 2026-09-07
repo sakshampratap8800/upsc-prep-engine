@@ -126,6 +126,16 @@ export function parseSyllabusString(text: string): ParsedTopicStructure {
         hasSubContent: true,
         items: semiParts.map((s) => ({ label: '•', text: s })),
       };
+    } else if (body.length > 0) {
+      const commaParts = body.split(/,\s*(?![^()]*\))/).map((s) => s.trim()).filter(Boolean);
+      if (commaParts.length > 1) {
+        return {
+          type: 'semicolon_list',
+          title,
+          hasSubContent: true,
+          items: commaParts.map((s) => ({ label: '•', text: s })),
+        };
+      }
     }
   }
 
@@ -167,7 +177,7 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
 
   // Collect available filter tabs
   const filterTabs = useMemo(() => {
-    return ['ALL', 'Prelims', 'GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Essay', 'Sociology Paper-I', 'Sociology Paper-II'];
+    return ['ALL', 'APFC', 'Prelims', 'GS-I', 'GS-II', 'GS-III', 'GS-IV', 'Essay', 'Sociology Paper-I', 'Sociology Paper-II'];
   }, []);
 
   // Filter topics based on active tab and search query
@@ -175,6 +185,7 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
     return initialTopics
       .filter((parent) => {
         if (selectedFilter === 'ALL') return true;
+        if (selectedFilter === 'APFC') return parent.paper === 'APFC';
         if (selectedFilter === 'Sociology Paper-I') return parent.name === 'Sociology Paper-I';
         if (selectedFilter === 'Sociology Paper-II') return parent.name === 'Sociology Paper-II';
         if (selectedFilter === 'Prelims') return parent.paper === 'Prelims';
@@ -238,17 +249,22 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
         <div className="mt-4 flex flex-wrap gap-1.5 border-t border-stone-100 dark:border-stone-800 pt-3">
           {filterTabs.map((tab) => {
             const isActive = selectedFilter === tab;
+            const isApfc = tab === 'APFC';
             return (
               <button
                 key={tab}
                 onClick={() => setSelectedFilter(tab)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   isActive
-                    ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
+                    ? isApfc
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
+                    : isApfc
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/60 dark:border-indigo-800/40'
                     : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100'
                 }`}
               >
-                {tab}
+                {tab === 'APFC' ? '🛡️ APFC & EO/AO' : tab}
               </button>
             );
           })}
@@ -267,18 +283,29 @@ export function SyllabusHierarchyView({ initialTopics }: SyllabusHierarchyViewPr
           filteredParents.map((parent) => (
             <div key={parent.id} className="space-y-4">
               {/* Paper / Parent Heading */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 dark:border-stone-800 pb-2.5">
-                <div className="flex items-center gap-2.5">
-                  <span className="rounded-lg bg-stone-900 dark:bg-stone-100 px-2.5 py-1 text-xs font-bold text-white dark:text-stone-900">
-                    {parent.paper}
+              <div className="flex flex-col gap-1 border-b border-stone-200 dark:border-stone-800 pb-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
+                      parent.paper === 'APFC'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900'
+                    }`}>
+                      {parent.paper === 'APFC' ? 'EPFO APFC' : parent.paper}
+                    </span>
+                    <h2 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100">
+                      {parent.name}
+                    </h2>
+                  </div>
+                  <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
+                    {parent.children.length} {parent.children.length === 1 ? 'Topic' : 'Topics'}
                   </span>
-                  <h2 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100">
-                    {parent.name}
-                  </h2>
                 </div>
-                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                  {parent.children.length} {parent.children.length === 1 ? 'Topic' : 'Topics'}
-                </span>
+                {parent.description && (
+                  <p className="text-xs text-stone-500 dark:text-stone-400 pl-1 mt-0.5">
+                    {parent.description}
+                  </p>
+                )}
               </div>
 
               {/* Topics Grid */}

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Clean naming: e.g. pyq_2014_prelims_paper_2_csat_q34.png
     const cleanPaper = pyq.paper.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toLowerCase();
-    const cleanStage = pyq.examStage.toLowerCase();
+    const cleanStage = pyq.examStage.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toLowerCase();
     const qNum = pyq.questionNumber ? `q${pyq.questionNumber}` : `id${pyq.id}`;
     const fileName = `pyq_${pyq.year}_${cleanStage}_${cleanPaper}_${qNum}.${ext}`;
 
@@ -74,46 +74,40 @@ export async function POST(req: NextRequest) {
       // Ignored on serverless Vercel
     }
 
-    // Update database (use raw SQL update for 100% resilience across all client versions)
+    // Update database
     const rangeStartStr = formData.get('rangeStart') as string | null;
     const rangeEndStr = formData.get('rangeEnd') as string | null;
 
     let updatedQuestionsCount = 1;
 
-    try {
-      await prisma.$executeRawUnsafe(`UPDATE pyqs SET imageUrl = ? WHERE id = ?`, publicUrl, pyqId);
+    // First update the main target question
+    await prisma.pYQ.update({
+      where: { id: pyqId },
+      data: { imageUrl: publicUrl },
+    });
 
-      // If range is specified, apply to all questions in the exact same year, stage, and paper
-      if (rangeStartStr && rangeEndStr) {
-        const startQ = Math.min(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
-        const endQ = Math.max(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
-        
-        if (!isNaN(startQ) && !isNaN(endQ)) {
-          const res = await prisma.$executeRawUnsafe(
-            `UPDATE pyqs 
-             SET imageUrl = ? 
-             WHERE year = ? 
-               AND examStage = ? 
-               AND (paper = ? OR paper LIKE '%' || ? || '%')
-               AND questionNumber >= ? 
-               AND questionNumber <= ?`,
-            publicUrl,
-            pyq.year,
-            pyq.examStage,
-            pyq.paper,
-            pyq.paper.includes('CSAT') ? 'CSAT' : pyq.paper,
-            startQ,
-            endQ
-          );
-          updatedQuestionsCount = res;
-        }
+    // If range is specified, apply to all questions in the exact same year, stage, and paper
+    if (rangeStartStr && rangeEndStr) {
+      const startQ = Math.min(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
+      const endQ = Math.max(parseInt(rangeStartStr, 10), parseInt(rangeEndStr, 10));
+      
+      if (!isNaN(startQ) && !isNaN(endQ)) {
+        const rangeResult = await prisma.pYQ.updateMany({
+          where: {
+            year: pyq.year,
+            examStage: pyq.examStage,
+            paper: pyq.paper,
+            questionNumber: {
+              gte: startQ,
+              lte: endQ,
+            },
+          },
+          data: {
+            imageUrl: publicUrl,
+          },
+        });
+        updatedQuestionsCount = rangeResult.count;
       }
-    } catch (dbErr) {
-      console.warn('executeRaw failed, falling back to prisma.pYQ.update:', dbErr);
-      await prisma.pYQ.update({
-        where: { id: pyqId },
-        data: { imageUrl: publicUrl } as any,
-      });
     }
 
     return NextResponse.json({

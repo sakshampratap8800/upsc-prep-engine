@@ -18,6 +18,7 @@ import {
   Play
 } from 'lucide-react';
 import Link from 'next/link';
+import { FormattedQuestionText } from '@/components/FormattedQuestionText';
 
 interface Question {
   id: number;
@@ -30,6 +31,9 @@ interface Question {
   correctAnswer: string | null;
   explanation: string | null;
   subjectArea: string | null;
+  passageText?: string | null;
+  imageUrl?: string | null;
+  contentJson?: string | null;
 }
 
 interface TestData {
@@ -40,6 +44,26 @@ interface TestData {
   marksPerCorrect: number;
   negativeMarks: number;
   questions: Question[];
+}
+
+function renderFormattedText(text: string | null | undefined) {
+  if (!text) return null;
+  const parts = text.split(/(<u>.*?<\/u>|\*.*?\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('<u>') && part.endsWith('</u>')) {
+      const inner = part.slice(3, -4);
+      return (
+        <u key={index} className="underline decoration-2 underline-offset-4 font-bold decoration-indigo-600 dark:decoration-indigo-400">
+          {inner}
+        </u>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      const inner = part.slice(1, -1);
+      return <em key={index} className="italic font-serif">{inner}</em>;
+    }
+    return part;
+  });
 }
 
 export default function TestSeriesPage() {
@@ -58,7 +82,9 @@ export default function TestSeriesPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const yearsList = ['all', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016'];
+  const yearsList = selectedMode === 'epfo_apfc' 
+    ? ['all', '2025', '2023', '2021', '2017', '2016', '2012']
+    : ['all', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016'];
 
   const testModes = [
     {
@@ -74,6 +100,13 @@ export default function TestSeriesPage() {
       desc: '80 Questions • 120 Minutes • +2.5 / -0.83 marks (33% qualifying)',
       badge: 'CSAT Simulator',
       accent: 'border-amber-500 bg-amber-50 text-amber-900',
+    },
+    {
+      id: 'epfo_apfc',
+      name: 'EPFO / APFC Full Mock',
+      desc: '120 Questions • 120 Minutes • +2.5 / -0.83 marks (300 Marks)',
+      badge: 'APFC & EO/AO Pool',
+      accent: 'border-indigo-500 bg-indigo-50 text-indigo-900',
     },
     {
       id: 'mains_gs',
@@ -364,9 +397,32 @@ export default function TestSeriesPage() {
                 )}
               </div>
 
-              <h2 className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed whitespace-pre-wrap">
-                {testData.questions[currentIdx].questionText}
-              </h2>
+              {/* Passage if present */}
+              {testData.questions[currentIdx].passageText && (
+                <div className="mb-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300 mb-1">
+                    Reading Comprehension Passage / Context
+                  </p>
+                  <p className="text-sm text-stone-800 dark:text-stone-200 font-serif italic whitespace-pre-wrap">
+                    {testData.questions[currentIdx].passageText}
+                  </p>
+                </div>
+              )}
+
+              <div className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed">
+                <FormattedQuestionText text={testData.questions[currentIdx].questionText} contentJson={testData.questions[currentIdx].contentJson} />
+              </div>
+
+              {/* Diagram / Image if present */}
+              {testData.questions[currentIdx].imageUrl && (
+                <div className="my-4 flex flex-col items-center rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-3">
+                  <img
+                    src={testData.questions[currentIdx].imageUrl}
+                    alt={`Diagram for Q.${testData.questions[currentIdx].mockNumber}`}
+                    className="max-h-72 w-auto object-contain rounded-lg shadow-xs"
+                  />
+                </div>
+              )}
 
               {testData.questions[currentIdx].options.length > 0 ? (
                 <div className="space-y-3">

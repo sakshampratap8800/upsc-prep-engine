@@ -8,7 +8,7 @@ export interface PyqSidebarStats {
   yearStagePaperStats: { year: number; examStage: string; paper: string; _count: { id: number } }[];
 }
 
-const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Anthropology', 'Sociology'];
+const STAGE_ORDER = ['Prelims', 'Mains', 'Essay', 'Sociology', 'Anthropology', 'EPFO APFC', 'EPFO EO/AO'];
 
 export const getCachedPyqStats = unstable_cache(
   async (): Promise<PyqSidebarStats> => {
@@ -76,7 +76,7 @@ export const getCachedSyllabusHierarchy = unstable_cache(
       orderBy: { id: 'asc' },
     });
   },
-  ['syllabus-hierarchy-tree-v4'],
+  ['syllabus-hierarchy-tree-v5'],
   { revalidate: 60, tags: ['syllabus'] }
 );
 

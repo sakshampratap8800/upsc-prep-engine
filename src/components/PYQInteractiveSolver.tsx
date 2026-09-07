@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useEditMode } from '@/context/EditModeContext';
 import { GDRIVE_IMAGE_MAP } from '@/lib/gdrive-map';
+import { FormattedQuestionText } from '@/components/FormattedQuestionText';
 
 interface PYQInteractiveSolverProps {
   pyq: {
@@ -39,10 +40,31 @@ interface PYQInteractiveSolverProps {
     subjectArea: string | null;
     difficulty: string | null;
     directiveWord: string | null;
-    questionType: string | null;
+    questionType?: string | null;
     imageUrl?: string | null;
     passageText?: string | null;
+    contentJson?: string | null;
   };
+}
+
+function renderFormattedText(text: string | null | undefined) {
+  if (!text) return null;
+  const parts = text.split(/(<u>.*?<\/u>|\*.*?\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('<u>') && part.endsWith('</u>')) {
+      const inner = part.slice(3, -4);
+      return (
+        <u key={index} className="underline decoration-2 underline-offset-4 font-bold decoration-indigo-600 dark:decoration-indigo-400">
+          {inner}
+        </u>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      const inner = part.slice(1, -1);
+      return <em key={index} className="italic font-serif">{inner}</em>;
+    }
+    return part;
+  });
 }
 
 export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverProps) {
@@ -570,15 +592,15 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
 
                 {!passageCollapsed && (
                   <p className="text-sm text-stone-800 dark:text-stone-200 leading-relaxed whitespace-pre-wrap font-serif italic bg-white/60 dark:bg-stone-900/60 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40">
-                    {pyq.passageText}
+                    {renderFormattedText(pyq.passageText)}
                   </p>
                 )}
               </div>
             )}
 
-            <h2 className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed whitespace-pre-wrap">
-              {pyq.questionText}
-            </h2>
+            <div className="text-base md:text-lg font-semibold text-stone-900 dark:text-stone-100 leading-relaxed">
+              <FormattedQuestionText text={pyq.questionText} contentJson={pyq.contentJson} />
+            </div>
           </div>
         )}
 
@@ -686,8 +708,26 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
                 className="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 text-xs font-bold transition cursor-pointer shadow-xs"
               >
                 {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                <span>{uploadingImage ? 'Uploading & Linking...' : 'Upload Image'}</span>
+                <span>{uploadingImage ? 'Uploading & Linking...' : 'Upload Image File / Paste (Ctrl+V)'}</span>
               </button>
+
+              {/* Or Google Drive / Image URL direct link input */}
+              <div className="mt-3 flex items-center gap-2 max-w-lg w-full">
+                <input
+                  type="text"
+                  placeholder="Or paste Google Drive image share link..."
+                  value={gdriveInputUrl}
+                  onChange={(e) => setGdriveInputUrl(e.target.value)}
+                  className="flex-1 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-1.5 text-xs text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  onClick={handleSaveGdriveUrl}
+                  disabled={savingGdriveUrl || !gdriveInputUrl.trim()}
+                  className="rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-3 py-1.5 text-xs font-bold hover:bg-stone-800 dark:hover:bg-white transition cursor-pointer disabled:opacity-50"
+                >
+                  {savingGdriveUrl ? 'Saving...' : 'Save Link'}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -19,6 +19,8 @@ type PYQListItem = {
   questionText: string;
   subjectArea: string | null;
   difficulty: string | null;
+  imageUrl?: string | null;
+  contentJson?: string | null;
 };
 
 type PageItem = number | 'ellipsis';
@@ -104,6 +106,8 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           questionText: true,
           subjectArea: true,
           difficulty: true,
+          imageUrl: true,
+          contentJson: true,
         },
       }),
       prisma.pYQ.count({ where }),
@@ -133,6 +137,21 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
     acc[key].push(pyq);
     return acc;
   }, {});
+
+  const displayYearStats = stage
+    ? yearStagePaperStats
+        .filter((p) => p.examStage === stage)
+        .reduce<{ year: number; _count: { id: number } }[]>((acc, item) => {
+          const existing = acc.find((a) => a.year === item.year);
+          if (existing) {
+            existing._count.id += item._count.id;
+          } else {
+            acc.push({ year: item.year, _count: { id: item._count.id } });
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => b.year - a.year)
+    : yearStats;
 
   return (
     <div>
@@ -175,21 +194,91 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           {/* Filters Sidebar */}
           <div className="w-56 flex-shrink-0">
             <div className="sticky top-6 max-h-[75vh] overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs">
-              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">Exam Stage</h3>
-              <ul className="mt-2 space-y-1">
-                <li>
-                  <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!stage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
-                    All Stages
-                  </Link>
-                </li>
-                {stageStats.map((s) => (
-                  <li key={s.examStage}>
-                    <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${stage === s.examStage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
-                      {s.examStage} ({s._count.id})
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">All Exams</h3>
+                  </div>
+                  <ul className="mt-2 space-y-1">
+                    <li>
+                      <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!stage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
+                        All Questions ({totalCountRaw})
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">🏛️ UPSC CSE</h3>
+                  <ul className="mt-2 space-y-1">
+                    {stageStats
+                      .filter((s) => ['Prelims', 'Mains', 'Essay', 'Sociology', 'Anthropology'].includes(s.examStage))
+                      .map((s) => (
+                        <li key={s.examStage}>
+                          <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${stage === s.examStage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
+                            {s.examStage} ({s._count.id})
+                          </Link>
+                        </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {stageStats.some((s) => s.examStage.startsWith('EPFO')) && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">🛡️ EPFO / APFC</h3>
+                    <ul className="mt-2 space-y-2">
+                      {stageStats
+                        .filter((s) => s.examStage.startsWith('EPFO'))
+                        .map((s) => {
+                          const isCurrentStage = stage === s.examStage;
+                          const stagePapers = yearStagePaperStats
+                            .filter((p) => p.examStage === s.examStage)
+                            .sort((a, b) => b.year - a.year);
+
+                          return (
+                            <li key={s.examStage} className="space-y-1">
+                              <Link
+                                href={buildPyqHref({ stage: s.examStage, paper: undefined, openYear: undefined })}
+                                className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                                  isCurrentStage && !year
+                                    ? 'bg-indigo-600 text-white'
+                                    : isCurrentStage
+                                    ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800'
+                                    : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                                }`}
+                              >
+                                <span>{s.examStage.replace('EPFO ', '')}</span>
+                                <span className="text-xs font-normal opacity-80">{s._count.id} Qs</span>
+                              </Link>
+
+                              {/* Year Breakdown for this exam */}
+                              <ul className="ml-2 border-l-2 border-indigo-200 dark:border-indigo-800/60 pl-2 space-y-0.5">
+                                {stagePapers.map((p) => {
+                                  const isSelected = stage === s.examStage && year === p.year;
+                                  return (
+                                    <li key={`${s.examStage}-${p.year}`}>
+                                      <Link
+                                        href={buildPyqHref({ stage: s.examStage, year: p.year, paper: p.paper, openYear: p.year })}
+                                        className={`flex items-center justify-between rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                                          isSelected
+                                            ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                                            : 'text-stone-600 dark:text-stone-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300'
+                                        }`}
+                                      >
+                                        <span>{p.year} Paper</span>
+                                        <span className="text-[10px] opacity-75">{p._count.id} Qs</span>
+                                      </Link>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  </div>
+                )}
+              </div>
 
               <h3 className="mt-6 text-sm font-bold text-stone-900 dark:text-stone-100">Year</h3>
               <ul className="mt-2 space-y-1">
@@ -198,7 +287,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                     All Years
                   </Link>
                 </li>
-                {yearStats.map((y) => {
+                {displayYearStats.map((y) => {
                   const isOpen = openYear === y.year;
                   const papersByStage = yearStagePaperStats
                     .filter((p) => p.year === y.year)
@@ -278,6 +367,8 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                         questionText={pyq.questionText}
                         subjectArea={pyq.subjectArea || undefined}
                         difficulty={pyq.difficulty || undefined}
+                        imageUrl={pyq.imageUrl}
+                        contentJson={pyq.contentJson}
                       />
                     ))}
                   </div>

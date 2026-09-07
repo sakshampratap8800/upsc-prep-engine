@@ -11,6 +11,7 @@ import {
   Trophy,
   Clock,
 } from 'lucide-react';
+import { FormattedQuestionText } from '@/components/FormattedQuestionText';
 
 // ── Types ───────────────────────────────────────────────────────────────
 interface Question {
@@ -22,6 +23,9 @@ interface Question {
   correctAnswer: string | null;
   explanation: string | null;
   difficulty: string | null;
+  imageUrl?: string | null;
+  passageText?: string | null;
+  contentJson?: string | null;
 }
 
 interface QuestionState {
@@ -302,10 +306,33 @@ export default function PrelimsPractice({
           )}
         </div>
 
+        {/* Passage / Context (if present) */}
+        {q.passageText && (
+          <div className="mb-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300 mb-1.5">
+              Reading Comprehension Passage / Directions
+            </p>
+            <p className="text-sm text-stone-800 dark:text-stone-200 leading-relaxed font-serif italic whitespace-pre-wrap">
+              {q.passageText}
+            </p>
+          </div>
+        )}
+
         {/* Question text */}
-        <p className="whitespace-pre-wrap text-stone-900 dark:text-stone-100 leading-relaxed font-medium">
-          {q.questionText}
-        </p>
+        <div className="text-stone-900 dark:text-stone-100 leading-relaxed font-medium">
+          <FormattedQuestionText text={q.questionText} contentJson={q.contentJson} />
+        </div>
+
+        {/* Diagram / Image (if present) */}
+        {q.imageUrl && (
+          <div className="my-4 flex flex-col items-center rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 p-3">
+            <img
+              src={q.imageUrl}
+              alt={`Diagram for Question ${q.questionNumber || q.id}`}
+              className="max-h-72 w-auto object-contain rounded-lg shadow-xs"
+            />
+          </div>
+        )}
 
         {/* Options or Text area */}
         {hasOptions ? (

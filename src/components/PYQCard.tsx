@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RelevanceBadge } from './RelevanceBadge';
+import { FormattedQuestionText } from './FormattedQuestionText';
 
 interface PYQCardProps {
   id: number;
@@ -12,6 +13,7 @@ interface PYQCardProps {
   difficulty?: string;
   conceptTested?: string;
   imageUrl?: string | null;
+  contentJson?: string | null;
 }
 
 export function PYQCard({
@@ -24,6 +26,7 @@ export function PYQCard({
   subjectArea,
   difficulty,
   imageUrl,
+  contentJson,
 }: PYQCardProps) {
   return (
     <Link href={`/pyq/${id}`} className="block group">
@@ -48,9 +51,9 @@ export function PYQCard({
             </span>
           )}
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200 whitespace-pre-line line-clamp-4">
-          {questionText}
-        </p>
+        <div className={`mt-2 text-sm leading-relaxed text-stone-800 dark:text-stone-200 ${contentJson ? '' : 'line-clamp-4'}`}>
+          <FormattedQuestionText text={questionText} contentJson={contentJson} />
+        </div>
         <div className="mt-3 flex items-center gap-2">
           {subjectArea && (
             <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300">

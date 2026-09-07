@@ -162,6 +162,7 @@ export default async function PYQDetailPage({ params }: Props) {
             questionType: pyq.questionType,
             imageUrl: imageUrl,
             passageText: passageText,
+            contentJson: (pyq as any).contentJson || null,
           }}
         />
 

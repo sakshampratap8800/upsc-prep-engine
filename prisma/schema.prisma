@@ -140,6 +140,7 @@ model PYQ {
   sourcePage     Int?
   imageUrl       String?
   passageText    String?
+  contentJson    String?
   confidence     Float    @default(1.0)
   createdAt      DateTime @default(now())
 

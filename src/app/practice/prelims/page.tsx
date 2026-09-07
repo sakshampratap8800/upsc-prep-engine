@@ -65,6 +65,9 @@ export default async function PrelimsPage({ searchParams }: PageProps) {
             correctAnswer: true,
             explanation: true,
             difficulty: true,
+            imageUrl: true,
+            passageText: true,
+            contentJson: true,
           },
         })
       )
@@ -93,6 +96,9 @@ export default async function PrelimsPage({ searchParams }: PageProps) {
           correctAnswer: pyq.correctAnswer,
           explanation: pyq.explanation,
           difficulty: pyq.difficulty,
+          imageUrl: pyq.imageUrl || null,
+          passageText: pyq.passageText || null,
+          contentJson: (pyq as any).contentJson || null,
         };
       })
       // Shuffle the result order
