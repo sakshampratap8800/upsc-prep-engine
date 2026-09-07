@@ -7,6 +7,7 @@ import {
   BookOpen,
   FileQuestion,
   GraduationCap,
+  Award,
   Calendar,
   Search,
   RotateCcw,
@@ -27,6 +28,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { label: 'Study APFC', href: '/study/apfc', icon: Award },
   { label: 'Library', href: '/library', icon: BookOpen },
   { label: 'PYQ Browser', href: '/pyq', icon: FileQuestion },
   { label: 'Syllabus', href: '/syllabus', icon: GraduationCap },
