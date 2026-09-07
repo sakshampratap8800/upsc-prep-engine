@@ -74,43 +74,61 @@ Return ONLY a valid JSON object matching this schema:
 - Chapter ${chapter.number}: ${chapter.title}
 - Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
 
-    // Priority Order: Most advanced Gemini flagship models first -> Groq LLaMA 3.3 70B fallback -> Flash Lite
+    // Priority Order: Most advanced Gemini flagship models first -> Groq fallback -> Flash Lite
     const geminiModels = [
       'gemini-3.8-flash',
       'gemini-3.7-flash',
       'gemini-3.6-flash',
       'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite'
+      'gemini-flash-latest',
+      'gemini-3.5-flash-lite'
     ];
 
     let parsedData = null;
     let modelUsed = '';
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    // 1. Try Gemini Models in descending intelligence order
-    for (const modelName of geminiModels) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-          },
-          systemInstruction: systemPrompt,
-        });
+    // 1. Try Gemini Models using direct header auth (x-goog-api-key)
+    if (geminiApiKey) {
+      for (const modelName of geminiModels) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': geminiApiKey,
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                responseMimeType: 'application/json',
+              }
+            })
+          });
 
-        const aiRes = await model.generateContent(userPrompt);
-        const jsonText = aiRes.response.text();
-        parsedData = JSON.parse(jsonText);
-        modelUsed = modelName;
-        console.log(`Successfully generated chapter analysis with ${modelName}`);
-        break;
-      } catch (err) {
-        console.warn(`Gemini model ${modelName} unavailable/rate-limited, falling back...`);
+          const json = await res.json();
+          if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+            const rawText = json.candidates[0].content.parts[0].text;
+            parsedData = JSON.parse(rawText);
+            modelUsed = modelName;
+            console.log(`Successfully generated chapter analysis with ${modelName}`);
+            break;
+          } else {
+            console.warn(`Gemini model ${modelName} failed/unavailable:`, json.error?.message || res.statusText);
+          }
+        } catch (err) {
+          console.warn(`Gemini model ${modelName} call failed, falling back...`);
+        }
       }
     }
 
-    // 2. Fallback to Groq (LLaMA 3.3 70B Versatile) if Gemini runs into quota
+    // 2. Fallback to Groq (LLaMA 3.1 8B Instant) if Gemini runs into quota
     if (!parsedData && process.env.GROQ_API_KEY) {
       try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -120,7 +138,7 @@ Return ONLY a valid JSON object matching this schema:
             'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -133,8 +151,8 @@ Return ONLY a valid JSON object matching this schema:
         const content = groqJson.choices?.[0]?.message?.content;
         if (content) {
           parsedData = JSON.parse(content);
-          modelUsed = 'Groq LLaMA 3.3 70B';
-          console.log('Successfully generated chapter analysis with Groq LLaMA 3.3 70B');
+          modelUsed = 'Groq LLaMA 3.1 8B';
+          console.log('Successfully generated chapter analysis with Groq LLaMA 3.1 8B');
         }
       } catch (groqErr) {
         console.error('Groq fallback error:', groqErr);
