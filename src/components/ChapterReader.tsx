@@ -221,11 +221,19 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                   <span className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-xs">
                     <Sparkles className="h-3.5 w-3.5 text-amber-300" /> High-Yield UPSC Takeaways
                   </span>
-                  {aiData.relevance && (
-                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 bg-indigo-100/90 dark:bg-indigo-900/50 px-3 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                      {aiData.relevance}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {aiData.modelUsed && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 bg-stone-200/80 dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-300/70 dark:border-stone-700">
+                        <Sparkles className="h-3 w-3 text-amber-500" />
+                        Model: {aiData.modelUsed}
+                      </span>
+                    )}
+                    {aiData.relevance && (
+                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 bg-indigo-100/90 dark:bg-indigo-900/50 px-3 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                        {aiData.relevance}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <ul className="mt-4 space-y-3">
                   {aiData.highYieldSummary.map((item, idx) => (
