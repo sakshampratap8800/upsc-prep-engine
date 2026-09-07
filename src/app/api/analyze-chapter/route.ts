@@ -160,7 +160,9 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     if (!parsedData) {
-      throw new Error('Failed to generate analysis across all Gemini and Groq models');
+      const keyStatus = geminiApiKey ? `Present (length ${geminiApiKey.length})` : 'MISSING';
+      const groqStatus = process.env.GROQ_API_KEY ? 'Present' : 'MISSING';
+      throw new Error(`Failed to generate analysis across all Gemini and Groq models. (GEMINI_KEY: ${keyStatus}, GROQ_KEY: ${groqStatus})`);
     }
 
     // Save permanently in the database under this chapter's record
@@ -183,7 +185,8 @@ Return ONLY a valid JSON object matching this schema:
 
     return NextResponse.json({ success: true, data: { ...parsedData, modelUsed } });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Error generating UPSC summary';
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('API /api/analyze-chapter Error:', error);
+    return NextResponse.json({ success: false, error: msg, details: String(error) }, { status: 500 });
   }
 }
