@@ -80,7 +80,23 @@ export default function TestSeriesPage() {
   const [detailedResults, setDetailedResults] = useState<Record<number, any>>({});
   const [filterResult, setFilterResult] = useState<'all' | 'correct' | 'incorrect' | 'unattempted'>('all');
 
+  // AI Mock Generation States
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiMessage, setAiMessage] = useState('');
+  const [aiMocksList, setAiMocksList] = useState<string[]>([]);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (selectedMode === 'ai_epfo_apfc') {
+      fetch('/api/test-series?mode=ai_epfo_apfc_list')
+        .then(r => r.json())
+        .then(data => {
+           if (data.mocks) setAiMocksList(data.mocks);
+        }).catch(e => console.error(e));
+    }
+  }, [selectedMode]);
+
 
   const yearsList = selectedMode === 'epfo_apfc' 
     ? ['all', '2025', '2023', '2021', '2017', '2016', '2012']
@@ -109,6 +125,13 @@ export default function TestSeriesPage() {
       accent: 'border-indigo-500 bg-indigo-50 text-indigo-900',
     },
     {
+      id: 'ai_epfo_apfc',
+      name: 'AI EPFO/APFC Full Mock',
+      desc: '120 Questions • 120 Minutes • +2.5 / -0.83 marks (300 Marks)',
+      badge: '🤖 AI Generated',
+      accent: 'border-violet-500 bg-violet-50 text-violet-900',
+    },
+    {
       id: 'mains_gs',
       name: 'Mains GS Paper (I-IV)',
       desc: '20 Questions • 180 Minutes • 250 Marks simulation',
@@ -130,6 +153,53 @@ export default function TestSeriesPage() {
       accent: 'border-rose-500 bg-rose-50 text-rose-900',
     },
   ];
+
+  
+  const handleGenerateAIMock = async () => {
+    setAiGenerating(true);
+    setAiProgress(0);
+    setAiMessage('Initializing generation pipeline...');
+    
+    try {
+      const response = await fetch('/api/mock-gen');
+      if (!response.body) throw new Error('No readable stream');
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              setAiProgress(data.progress || 0);
+              setAiMessage(data.message || '');
+              
+              if (data.stage === 'complete' && data.mockId) {
+                setAiGenerating(false);
+                setSelectedYear(data.mockId);
+                handleStartTest('ai_epfo_apfc', data.mockId);
+              }
+              if (data.stage === 'error') {
+                setAiGenerating(false);
+                alert('Generation error: ' + data.message);
+              }
+            } catch(e) {}
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setAiGenerating(false);
+      alert('Failed to connect to generation stream');
+    }
+  };
 
   const handleStartTest = async (modeId: string = selectedMode, year: string = selectedYear) => {
     setLoading(true);
@@ -269,36 +339,83 @@ export default function TestSeriesPage() {
             ))}
           </div>
 
+          
           {/* Year / Paper Filter Selector */}
-          <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">Paper Source & Year Selection</h4>
-                <p className="text-xs text-stone-500 dark:text-stone-400">
-                  Choose between a full randomized simulation across 10 years or a specific official year's paper.
-                </p>
+          {selectedMode === 'ai_epfo_apfc' ? (
+            <div className="rounded-2xl border border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-950/20 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-violet-900 dark:text-violet-100">AI Mock Generation</h4>
+                  <p className="text-xs text-violet-700/70 dark:text-violet-300/70">
+                    Generate a fresh, completely unique 120-question mock using the 3-model AI pipeline, or take a previously generated one.
+                  </p>
+                </div>
               </div>
-              <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:text-stone-300">
-                {selectedYear === 'all' ? '🎲 Random Mock (All Years)' : `📜 Official ${selectedYear} Paper`}
-              </span>
-            </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              {yearsList.map((yr) => (
-                <button
-                  key={yr}
-                  onClick={() => setSelectedYear(yr)}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
-                    selectedYear === yr
-                      ? 'bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 shadow-sm ring-2 ring-stone-900/20 dark:ring-amber-400/40'
-                      : 'border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:border-stone-300'
-                  }`}
-                >
-                  {yr === 'all' ? '✨ All Years (Random Mock)' : `${yr} Paper`}
-                </button>
-              ))}
+              {aiGenerating ? (
+                <div className="space-y-3 p-4 bg-white dark:bg-stone-900 rounded-xl border border-violet-100 dark:border-stone-800">
+                  <div className="flex justify-between items-center text-xs font-bold text-violet-600 dark:text-violet-400">
+                    <span>{aiMessage}</span>
+                    <span>{aiProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 transition-all duration-300" style={{ width: `${aiProgress}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={handleGenerateAIMock}
+                    className="rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer bg-violet-600 text-white shadow-sm hover:bg-violet-700 flex items-center gap-2"
+                  >
+                    ✨ Generate New AI Mock (Takes ~3 mins)
+                  </button>
+                  {aiMocksList.map((yr) => (
+                    <button
+                      key={yr}
+                      onClick={() => setSelectedYear(yr)}
+                      className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                        selectedYear === yr
+                          ? 'bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 shadow-sm ring-2 ring-stone-900/20 dark:ring-amber-400/40'
+                          : 'border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700'
+                      }`}
+                    >
+                      {yr}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">Paper Source & Year Selection</h4>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    Choose between a full randomized simulation across 10 years or a specific official year's paper.
+                  </p>
+                </div>
+                <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:text-stone-300">
+                  {selectedYear === 'all' ? '🎲 Random Mock (All Years)' : `📜 Official ${selectedYear} Paper`}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {yearsList.map((yr) => (
+                  <button
+                    key={yr}
+                    onClick={() => setSelectedYear(yr)}
+                    className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+                      selectedYear === yr
+                        ? 'bg-stone-900 dark:bg-amber-500 text-white dark:text-stone-950 shadow-sm ring-2 ring-stone-900/20 dark:ring-amber-400/40'
+                        : 'border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:border-stone-300'
+                    }`}
+                  >
+                    {yr === 'all' ? '✨ All Years (Random Mock)' : `${yr} Paper`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-900 dark:bg-stone-950 text-white p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
             <div className="space-y-1">
@@ -320,7 +437,7 @@ export default function TestSeriesPage() {
 
             <button
               onClick={() => handleStartTest(selectedMode, selectedYear)}
-              disabled={loading}
+              disabled={loading || aiGenerating}
               className="inline-flex items-center gap-2.5 rounded-xl bg-white dark:bg-stone-100 px-8 py-3.5 text-sm font-bold text-stone-900 hover:bg-stone-100 dark:hover:bg-white disabled:opacity-50 transition cursor-pointer shadow-sm shrink-0"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-stone-900" />}

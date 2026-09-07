@@ -5,8 +5,19 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'prelims_gs1'; // prelims_gs1 | prelims_csat | mains_gs | essay | sociology
-    const yearParam = searchParams.get('year');
-    const targetYear = yearParam && yearParam !== 'all' ? parseInt(yearParam, 10) : null;
+    const year = searchParams.get('year');
+    const targetYear = year === 'all' ? null : parseInt(year || '', 10) || year; // year could be string for AI mock
+
+    // Quick API for fetching available AI mocks
+    if (mode === 'ai_epfo_apfc_list') {
+      const distinctPapers = await prisma.pYQ.findMany({
+        where: { examStage: 'AI Mock' },
+        select: { paper: true },
+        distinct: ['paper'],
+        orderBy: { paper: 'desc' }
+      });
+      return NextResponse.json({ success: true, mocks: distinctPapers.map(p => p.paper) });
+    }
 
     let questions: any[] = [];
     let title = '';
@@ -24,7 +35,7 @@ export async function GET(req: Request) {
       if (targetYear) {
         title = `UPSC Prelims GS Paper 1 (${targetYear} Official Exam Paper)`;
         const raw = await prisma.pYQ.findMany({
-          where: { examStage: 'Prelims', paper: { contains: 'Paper 1' }, year: targetYear },
+          where: { examStage: 'Prelims', paper: { contains: 'Paper 1' }, year: Number(targetYear) },
           orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
           take: 100,
         });
@@ -45,7 +56,7 @@ export async function GET(req: Request) {
       if (targetYear) {
         title = `UPSC Prelims CSAT Paper 2 (${targetYear} Official Exam Paper)`;
         const raw = await prisma.pYQ.findMany({
-          where: { examStage: 'Prelims', paper: { contains: 'Paper 2' }, year: targetYear },
+          where: { examStage: 'Prelims', paper: { contains: 'Paper 2' }, year: Number(targetYear) },
           orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
           take: 80,
         });
@@ -66,7 +77,7 @@ export async function GET(req: Request) {
       if (targetYear) {
         title = `UPSC Mains GS Paper (${targetYear} Official Exam Paper)`;
         const raw = await prisma.pYQ.findMany({
-          where: { examStage: 'Mains', year: targetYear },
+          where: { examStage: 'Mains', year: Number(targetYear) },
           orderBy: [{ paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
           take: 20,
         });
@@ -87,7 +98,7 @@ export async function GET(req: Request) {
       if (targetYear) {
         title = `UPSC Essay Paper (${targetYear} Official Topics)`;
         const raw = await prisma.pYQ.findMany({
-          where: { examStage: 'Essay', year: targetYear },
+          where: { examStage: 'Essay', year: Number(targetYear) },
           orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
           take: 8,
         });
@@ -108,7 +119,7 @@ export async function GET(req: Request) {
       if (targetYear) {
         title = `Sociology Optional (${targetYear} Official Paper)`;
         const raw = await prisma.pYQ.findMany({
-          where: { examStage: 'Sociology', year: targetYear },
+          where: { examStage: 'Sociology', year: Number(targetYear) },
           orderBy: [{ paper: 'asc' }, { questionNumber: 'asc' }, { id: 'asc' }],
           take: 15,
         });
@@ -131,7 +142,7 @@ export async function GET(req: Request) {
         const raw = await prisma.pYQ.findMany({
           where: { 
             examStage: { in: ['EPFO APFC', 'EPFO EO/AO'] },
-            year: targetYear 
+            year: Number(targetYear) 
           },
           orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
           take: 120,
@@ -143,6 +154,37 @@ export async function GET(req: Request) {
           where: { examStage: { in: ['EPFO APFC', 'EPFO EO/AO'] } },
         });
         questions = raw.sort(() => Math.random() - 0.5).slice(0, Math.min(120, raw.length));
+      }
+    } else if (mode === 'ai_epfo_apfc') {
+      totalQuestions = 120;
+      durationMinutes = 120;
+      marksPerCorrect = 2.5;
+      negativeMarks = 0.833;
+
+      if (targetYear) {
+        title = String(targetYear);
+        const raw = await prisma.pYQ.findMany({
+          where: { examStage: 'AI Mock', paper: String(targetYear) },
+          orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
+          take: 120,
+        });
+        questions = raw;
+      } else {
+        const latest = await prisma.pYQ.findFirst({
+          where: { examStage: 'AI Mock' },
+          orderBy: { id: 'desc' },
+        });
+        if (latest) {
+          title = latest.paper;
+          questions = await prisma.pYQ.findMany({
+            where: { examStage: 'AI Mock', paper: latest.paper },
+            orderBy: [{ questionNumber: 'asc' }, { id: 'asc' }],
+            take: 120,
+          });
+        } else {
+          title = 'AI EPFO/APFC Full Mock';
+          questions = [];
+        }
       }
     }
 
