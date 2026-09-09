@@ -51,6 +51,7 @@ model Chapter {
   keyConceptsJson      String?
   definitionsJson      String?
   findOutQuestionsJson String?
+  mapImagesJson        String?
   createdAt            DateTime @default(now())
 
   // Relations

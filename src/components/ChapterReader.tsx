@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { RelevanceBadge } from '@/components/RelevanceBadge';
 import { PYQCard } from '@/components/PYQCard';
+import { ChapterMapGallery } from '@/components/ChapterMapGallery';
 import Link from 'next/link';
 
 interface ChapterReaderProps {
@@ -31,6 +32,7 @@ interface ChapterReaderProps {
     keyConceptsJson: string | null;
     definitionsJson: string | null;
     findOutQuestionsJson: string | null;
+    mapImagesJson: string | null;
     book: {
       id: number;
       title: string;
@@ -394,6 +396,9 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             </ul>
           </section>
         )}
+
+        {/* Chapter Maps & Diagrams */}
+        <ChapterMapGallery chapterId={chapter.id} initialImagesJson={chapter.mapImagesJson} />
 
         {/* Related PYQs */}
         <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">

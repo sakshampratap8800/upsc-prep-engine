@@ -14,15 +14,21 @@ export async function GET(
     const targetPath = path.resolve('E:/books/images', fileName);
 
     if (!fs.existsSync(targetPath)) {
-      // Also check pyqs subfolder if created
-      const subPath = path.resolve('E:/books/images/pyqs', fileName);
-      if (!fs.existsSync(subPath)) {
+      // Check pyqs or maps subfolders
+      const pyqPath = path.resolve('E:/books/images/pyqs', fileName);
+      const mapPath = path.resolve('E:/books/images/maps', fileName);
+      
+      let filePath = '';
+      if (fs.existsSync(pyqPath)) filePath = pyqPath;
+      else if (fs.existsSync(mapPath)) filePath = mapPath;
+      else {
         return new NextResponse('Image not found in E:/books/images', { status: 404 });
       }
-      const buffer = fs.readFileSync(subPath);
+
+      const buffer = fs.readFileSync(filePath);
       return new NextResponse(buffer, {
         headers: {
-          'Content-Type': 'image/png',
+          'Content-Type': fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ? 'image/jpeg' : 'image/png',
           'Cache-Control': 'public, max-age=31536000, immutable',
         },
       });
