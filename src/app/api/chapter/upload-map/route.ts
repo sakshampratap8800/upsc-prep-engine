@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     const currentImages = chapter.mapImagesJson ? JSON.parse(chapter.mapImagesJson) : [];
-    const { uploadImageToDrive } = await import('@/lib/gdrive');
+    const { uploadImageToAzure } = await import('@/lib/azure-storage');
 
     const uploadedUrls = [];
 
@@ -53,12 +53,13 @@ export async function POST(req: NextRequest) {
 
       let publicUrl = `/chapter-maps/${fileName}`;
       try {
-        const driveUpload = await uploadImageToDrive(fileName, buffer, file.type || 'image/png');
-        if (driveUpload && driveUpload.cdnUrl) {
-          publicUrl = driveUpload.cdnUrl;
+        // 1. Primary: Upload directly to Azure Blob Storage (Student Pack Cloud Storage)
+        const azureUrl = await uploadImageToAzure(fileName, buffer, file.type || 'image/png');
+        if (azureUrl) {
+          publicUrl = azureUrl;
         }
-      } catch (err) {
-        console.warn('Google Drive direct upload failed for chapter map:', err);
+      } catch (azureErr) {
+        console.warn('Azure upload failed, using local backup:', azureErr);
       }
 
       // Save local backups

@@ -47,17 +47,17 @@ export async function POST(req: NextRequest) {
     const qNum = pyq.questionNumber ? `q${pyq.questionNumber}` : `id${pyq.id}`;
     const fileName = `pyq_${pyq.year}_${cleanStage}_${cleanPaper}_${qNum}.${ext}`;
 
-    // 1. Upload directly to Google Drive `images` folder (Cloud Storage)
+    // 1. Primary: Upload directly to Azure Blob Storage (Student Pack Cloud Storage)
     let publicUrl = `/pyq-images/${fileName}`;
     try {
-      const { uploadImageToDrive } = await import('@/lib/gdrive');
-      const driveUpload = await uploadImageToDrive(fileName, buffer, file.type || 'image/png');
-      if (driveUpload && driveUpload.cdnUrl) {
-        publicUrl = driveUpload.cdnUrl;
-        console.log('Successfully uploaded diagram to Google Drive:', driveUpload.cdnUrl);
+      const { uploadImageToAzure } = await import('@/lib/azure-storage');
+      const azureUrl = await uploadImageToAzure(fileName, buffer, file.type || 'image/png');
+      if (azureUrl) {
+        publicUrl = azureUrl;
+        console.log('Successfully uploaded diagram to Azure Blob Storage:', azureUrl);
       }
-    } catch (gdriveErr) {
-      console.warn('Google Drive direct upload skipped or failed:', gdriveErr);
+    } catch (azureErr) {
+      console.warn('Azure upload skipped or failed, using local backup:', azureErr);
     }
 
     // 2. Save local backups if local folders exist
