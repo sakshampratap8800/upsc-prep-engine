@@ -61,7 +61,7 @@ export default async function ReadBookPage({ params }: Props) {
         }
       />
 
-      <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs overflow-hidden h-[calc(100vh-180px)]">
+      <div className="mx-auto max-w-4xl rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs overflow-hidden h-[90vh] min-h-[1000px] w-full">
         <iframe
           src={pdfSrc}
           className="w-full h-full border-none"

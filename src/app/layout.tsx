@@ -6,6 +6,7 @@ import { AdminPasswordModal } from '@/components/AdminPasswordModal';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { EditModeProvider } from '@/context/EditModeContext';
+import NextTopLoader from 'nextjs-toploader';
 
 export const metadata: Metadata = {
   title: 'UPSC Prep Engine',
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 antialiased transition-colors duration-200">
+        <NextTopLoader color="#3b82f6" showSpinner={false} />
         <ThemeProvider>
           <EditModeProvider>
             <AdminPasswordModal />
