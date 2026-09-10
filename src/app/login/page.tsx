@@ -60,6 +60,9 @@ export default function LoginPage() {
           <p className="text-sm text-stone-500 dark:text-stone-400 mb-8 text-center px-4">
             UPSC Preparation Engine
           </p>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mb-8 text-center px-4">
+            Hint - Please Enter your name(all small)
+          </p>
 
           <form onSubmit={handleLogin} className="w-full space-y-4">
             <div className="space-y-3">
@@ -115,6 +118,10 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <p className="mt-6 text-[11px] text-stone-400 dark:text-stone-500 text-center tracking-wide font-mono">
+            Allowed Users: <span className="text-stone-600 dark:text-stone-400 font-semibold">saksham</span> / <span className="text-stone-600 dark:text-stone-400 font-semibold">shivangi</span>
+          </p>
         </div>
       </div>
     </div>

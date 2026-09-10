@@ -54,7 +54,7 @@ export default async function DashboardPage() {
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* Today's Study */}
             <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
-              <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Today's Study</h2>
+              <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">Todays Study</h2>
               {todayTasks.length === 0 ? (
                 <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No tasks scheduled. Check the timetable.</p>
               ) : (
