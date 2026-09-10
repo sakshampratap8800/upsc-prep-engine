@@ -118,10 +118,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <p className="mt-6 text-[11px] text-stone-400 dark:text-stone-500 text-center tracking-wide font-mono">
-            Allowed Users: <span className="text-stone-600 dark:text-stone-400 font-semibold">saksham</span> / <span className="text-stone-600 dark:text-stone-400 font-semibold">shivangi</span>
-          </p>
         </div>
       </div>
     </div>
