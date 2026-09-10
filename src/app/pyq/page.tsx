@@ -7,7 +7,7 @@ import { FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 
 interface Props {
-  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string; openYear?: string; topicId?: string }>;
+  searchParams: Promise<{ stage?: string; year?: string; paper?: string; page?: string; openYear?: string; topicId?: string; ai?: string }>;
 }
 
 type PYQListItem = {
@@ -21,6 +21,7 @@ type PYQListItem = {
   difficulty: string | null;
   imageUrl?: string | null;
   contentJson?: string | null;
+  isAiGenerated?: boolean;
 };
 
 type PageItem = number | 'ellipsis';
@@ -28,7 +29,7 @@ type YearStat = { year: number; _count: { id: number } };
 type StageStat = { examStage: string; _count: { id: number } };
 type YearStagePaperStat = { year: number; examStage: string; paper: string; _count: { id: number } };
 
-function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number; topicId?: number }) {
+function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; page?: number; openYear?: number; topicId?: number; ai?: boolean }) {
   const params = new URLSearchParams();
   if (filters.stage) params.set('stage', filters.stage);
   if (filters.year) params.set('year', String(filters.year));
@@ -36,6 +37,7 @@ function buildPyqHref(filters: { stage?: string; year?: number; paper?: string; 
   if (filters.page && filters.page > 1) params.set('page', String(filters.page));
   if (filters.openYear) params.set('openYear', String(filters.openYear));
   if (filters.topicId) params.set('topicId', String(filters.topicId));
+  if (filters.ai) params.set('ai', 'true');
 
   const query = params.toString();
   return query ? `/pyq?${query}` : '/pyq';
@@ -83,9 +85,16 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
 
   try {
     const where: Record<string, unknown> = {};
-    if (stage) where.examStage = stage;
-    if (year) where.year = year;
-    if (paper) where.paper = paper;
+    const isAi = sp.ai === 'true';
+    if (isAi) {
+      where.isAiGenerated = true;
+    } else {
+      where.isAiGenerated = false;
+      if (stage) where.examStage = stage;
+      if (year) where.year = year;
+      if (paper) where.paper = paper;
+    }
+    
     if (topicId) {
       where.topics = { some: { id: topicId } };
     }
@@ -108,6 +117,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           difficulty: true,
           imageUrl: true,
           contentJson: true,
+          isAiGenerated: true,
         },
       }),
       prisma.pYQ.count({ where }),
@@ -201,8 +211,19 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                   </div>
                   <ul className="mt-2 space-y-1">
                     <li>
-                      <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!stage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
+                      <Link href={buildPyqHref({ year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${!stage && !sp.ai ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                         All Questions ({totalCountRaw})
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">✨ AI Practice</h3>
+                  <ul className="mt-2 space-y-1">
+                    <li>
+                      <Link href={buildPyqHref({ ai: true })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${sp.ai === 'true' ? 'bg-indigo-600 text-white' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-300'}`}>
+                        AI Generated Questions
                       </Link>
                     </li>
                   </ul>
@@ -215,7 +236,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                       .filter((s) => ['Prelims', 'Mains', 'Essay', 'Sociology', 'Anthropology'].includes(s.examStage))
                       .map((s) => (
                         <li key={s.examStage}>
-                          <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${stage === s.examStage ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
+                          <Link href={buildPyqHref({ stage: s.examStage, year, paper, openYear })} className={`block rounded-lg px-3 py-1.5 text-sm font-medium transition ${stage === s.examStage && !sp.ai ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100'}`}>
                             {s.examStage} ({s._count.id})
                           </Link>
                         </li>
@@ -369,6 +390,7 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                         difficulty={pyq.difficulty || undefined}
                         imageUrl={pyq.imageUrl}
                         contentJson={pyq.contentJson}
+                        isAiGenerated={pyq.isAiGenerated}
                       />
                     ))}
                   </div>

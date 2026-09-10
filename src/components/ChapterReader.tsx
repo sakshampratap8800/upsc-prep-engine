@@ -52,6 +52,7 @@ interface ChapterReaderProps {
       questionText: string;
       subjectArea: string | null;
       difficulty: string | null;
+      isAiGenerated: boolean;
     }>;
     revisionItems: Array<{ id: number; title: string; priority: string }>;
   };
@@ -134,6 +135,51 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   };
 
   const hasSavedNotes = Boolean(aiData || (keyConcepts && keyConcepts.length > 0) || (definitions && definitions.length > 0));
+
+  const [generatingPYQs, setGeneratingPYQs] = useState(false);
+  const [genStatus, setGenStatus] = useState('');
+  const [genProgress, setGenProgress] = useState(0);
+
+  const realPyqs = chapter.pyqs.filter((p) => !p.isAiGenerated);
+  const aiPyqs = chapter.pyqs.filter((p) => p.isAiGenerated);
+
+  const handleGenerateQuestions = async () => {
+    setGeneratingPYQs(true);
+    setGenStatus('Starting generation...');
+    setGenProgress(10);
+    setError(null);
+    try {
+      setGenStatus('Processing chapter content...');
+      setGenProgress(30);
+      
+      setGenStatus('Generating questions using NVIDIA 120B...');
+      setGenProgress(60);
+      
+      const res = await fetch('/api/mock-gen/generate-chapter-pyqs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId: chapter.id }),
+      });
+      
+      setGenStatus('Validating and saving questions...');
+      setGenProgress(90);
+      
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate practice questions');
+      }
+
+      setGenProgress(100);
+      setGenStatus('Completed!');
+      
+      // Reload the page to fetch the newly created questions
+      window.location.reload();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error generating practice questions';
+      setError(msg);
+      setGeneratingPYQs(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -400,18 +446,18 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
         {/* Chapter Maps & Diagrams */}
         <ChapterMapGallery chapterId={chapter.id} initialImagesJson={chapter.mapImagesJson} />
 
-        {/* Related PYQs */}
+        {/* Related PYQs (Real) */}
         <section className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xs">
           <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-            Related PYQs {chapter.pyqs.length > 0 && `(${chapter.pyqs.length})`}
+            Real UPSC PYQs {realPyqs.length > 0 && `(${realPyqs.length})`}
           </h2>
-          {chapter.pyqs.length === 0 ? (
+          {realPyqs.length === 0 ? (
             <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-              No PYQs linked yet.
+              No real PYQs linked yet.
             </p>
           ) : (
             <div className="mt-3 space-y-3">
-              {chapter.pyqs.map((pyq) => (
+              {realPyqs.map((pyq) => (
                 <PYQCard
                   key={pyq.id}
                   id={pyq.id}
@@ -422,6 +468,80 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
                   questionText={pyq.questionText}
                   subjectArea={pyq.subjectArea || undefined}
                   difficulty={pyq.difficulty || undefined}
+                  isAiGenerated={false}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* AI Generated Practice Questions */}
+        <section className="rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-950/20 p-6 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" /> AI Generated Practice Questions {aiPyqs.length > 0 && `(${aiPyqs.length})`}
+            </h2>
+            
+            {aiPyqs.length === 0 ? (
+              <button
+                onClick={handleGenerateQuestions}
+                disabled={generatingPYQs}
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+              >
+                {generatingPYQs ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                ) : (
+                  <><Layers className="h-4 w-4" /> Generate 20 AI Practice Questions</>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerateQuestions}
+                disabled={generatingPYQs}
+                className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-indigo-900/50 px-4 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition hover:bg-indigo-50 dark:hover:bg-indigo-900 disabled:opacity-50 cursor-pointer"
+              >
+                {generatingPYQs ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Regenerating...</>
+                ) : (
+                  <><RotateCcw className="h-3.5 w-3.5" /> Regenerate Practice Questions</>
+                )}
+              </button>
+            )}
+          </div>
+
+          {generatingPYQs && (
+            <div className="mb-6 p-4 rounded-xl bg-white dark:bg-stone-900 border border-indigo-100 dark:border-indigo-900 shadow-sm animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-2">
+                <span>{genStatus}</span>
+                <span>{genProgress}%</span>
+              </div>
+              <div className="h-2 w-full bg-indigo-100 dark:bg-indigo-950 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-500 transition-all duration-500 ease-out"
+                  style={{ width: `${genProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {aiPyqs.length === 0 && !generatingPYQs ? (
+            <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+              No AI practice questions generated yet. Click the button above to generate them using NVIDIA 120B.
+            </p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {aiPyqs.map((pyq) => (
+                <PYQCard
+                  key={pyq.id}
+                  id={pyq.id}
+                  year={pyq.year}
+                  examStage={pyq.examStage}
+                  paper={pyq.paper}
+                  questionNumber={pyq.questionNumber || undefined}
+                  questionText={pyq.questionText}
+                  subjectArea={pyq.subjectArea || undefined}
+                  difficulty={pyq.difficulty || undefined}
+                  isAiGenerated={true}
                 />
               ))}
             </div>

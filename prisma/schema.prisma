@@ -143,6 +143,8 @@ model PYQ {
   passageText    String?
   contentJson    String?
   confidence     Float    @default(1.0)
+  isAiGenerated  Boolean  @default(false)
+  aiModel        String?
   createdAt      DateTime @default(now())
 
   // Relations
