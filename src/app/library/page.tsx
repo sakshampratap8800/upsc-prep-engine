@@ -4,6 +4,9 @@ import prisma from '@/lib/db';
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function LibraryPage() {
   let subjects: Array<{
     id: number;

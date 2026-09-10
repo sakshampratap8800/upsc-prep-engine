@@ -3,6 +3,9 @@ import { ChapterReader } from '@/components/ChapterReader';
 import prisma from '@/lib/db';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ subject: string; bookId: string; chapterId: string }>;
 }
