@@ -91,40 +91,57 @@ Return ONLY a valid JSON object matching this schema:
     // 1. Try Gemini Models using direct header auth (x-goog-api-key)
     if (geminiApiKey) {
       for (const modelName of geminiModels) {
-        try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': geminiApiKey,
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+        let success = false;
+        // Give the high-demand preview models up to 3 rapid retries. Others get 1 try.
+        const maxAttempts = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'].includes(modelName) ? 3 : 1;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': geminiApiKey,
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                  }
+                ],
+                generationConfig: {
+                  temperature: 0.2,
+                  responseMimeType: 'application/json',
                 }
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: 'application/json',
-              }
-            })
-          });
+              })
+            });
 
-          const json = await res.json();
-          if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const rawText = json.candidates[0].content.parts[0].text;
-            parsedData = JSON.parse(rawText);
-            modelUsed = modelName;
-            console.log(`Successfully generated chapter analysis with ${modelName}`);
+            const json = await res.json();
+            if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+              const rawText = json.candidates[0].content.parts[0].text;
+              parsedData = JSON.parse(rawText);
+              modelUsed = modelName;
+              console.log(`✅ Successfully generated chapter analysis with ${modelName} on attempt ${attempt}`);
+              success = true;
+              break;
+            } else {
+              const is503 = res.status === 503 || json.error?.code === 503;
+              console.warn(`Gemini model ${modelName} attempt ${attempt} failed/unavailable:`, json.error?.message || res.statusText);
+              
+              // Only retry on 503 Overloaded errors
+              if (is503 && attempt < maxAttempts) {
+                console.log(`Waiting 1.2s before retrying ${modelName}...`);
+                await new Promise(r => setTimeout(r, 1200));
+              } else {
+                break; // Skip to next model
+              }
+            }
+          } catch (err) {
+            console.warn(`Gemini model ${modelName} attempt ${attempt} threw an error, skipping...`);
             break;
-          } else {
-            console.warn(`Gemini model ${modelName} failed/unavailable:`, json.error?.message || res.statusText);
           }
-        } catch (err) {
-          console.warn(`Gemini model ${modelName} call failed, falling back...`);
         }
+        if (success) break;
       }
     }
 
