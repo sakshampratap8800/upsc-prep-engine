@@ -90,15 +90,25 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
     }
   }
 
+  const safeJSONParse = <T,>(jsonStr: string | null, fallback: T): T => {
+    if (!jsonStr) return fallback;
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch (e) {
+      console.error('Failed to parse JSON for chapter:', e);
+      return fallback;
+    }
+  };
+
   const [aiData, setAiData] = useState<SavedSummaryObject | null>(savedSummaryObj);
   const [keyConcepts, setKeyConcepts] = useState<string[]>(
-    chapter.keyConceptsJson ? JSON.parse(chapter.keyConceptsJson) : []
+    safeJSONParse<string[]>(chapter.keyConceptsJson, [])
   );
   const [definitions, setDefinitions] = useState<Array<{ term: string; definition: string }>>(
-    chapter.definitionsJson ? JSON.parse(chapter.definitionsJson) : []
+    safeJSONParse<Array<{ term: string; definition: string }>>(chapter.definitionsJson, [])
   );
 
-  const findOutQuestions: string[] = chapter.findOutQuestionsJson ? JSON.parse(chapter.findOutQuestionsJson) : [];
+  const findOutQuestions = safeJSONParse<string[]>(chapter.findOutQuestionsJson, []);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);

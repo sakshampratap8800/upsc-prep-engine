@@ -165,7 +165,16 @@ const ScratchPadImage = ({ image }: { image: MapImage }) => {
 
 export const ChapterMapGallery = ({ chapterId, initialImagesJson }: Props) => {
   const { isEditMode, authToken } = useEditMode();
-  const [images, setImages] = useState<MapImage[]>(initialImagesJson ? JSON.parse(initialImagesJson) : []);
+  const safeJSONParse = <T,>(jsonStr: string | null, fallback: T): T => {
+    if (!jsonStr) return fallback;
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch (e) {
+      console.error('Failed to parse initialImagesJson:', e);
+      return fallback;
+    }
+  };
+  const [images, setImages] = useState<MapImage[]>(safeJSONParse<MapImage[]>(initialImagesJson, []));
   const [isUploading, setIsUploading] = useState(false);
   const [filenamePrefix, setFilenamePrefix] = useState('Map');
   
