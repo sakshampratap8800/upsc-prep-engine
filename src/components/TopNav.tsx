@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Menu, X, BookOpen, Calendar, Search, Sun, Moon, Edit3 } from 'lucide-react';
+import { Menu, X, BookOpen, Calendar, Search, Sun, Moon, Edit3, LogOut } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useEditMode } from '@/context/EditModeContext';
@@ -105,6 +105,18 @@ export function TopNav() {
           ) : (
             <Moon className="h-4 w-4 text-stone-600 hover:-rotate-12 transition-transform" />
           )}
+        </button>
+
+        {/* Global App Logout */}
+        <button
+          onClick={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+          }}
+          title="Sign out of Application"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-colors cursor-pointer"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>

@@ -26,8 +26,9 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        router.push('/');
-        router.refresh(); // Force a refresh to ensure middleware catches the new cookie globally
+        // Use a hard redirect instead of Next.js router
+        // This ensures the browser sends the new cookie to the middleware and clears any Next.js client-cache
+        window.location.href = '/';
       } else {
         setError(data.error || 'Invalid credentials');
       }
