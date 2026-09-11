@@ -136,19 +136,44 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   const [genProgress, setGenProgress] = useState(0);
 
   const realPyqs = chapter.pyqs.filter((p) => !p.isAiGenerated);
-  const aiPyqs = chapter.pyqs.filter((p) => p.isAiGenerated);
+  const [liveAiPyqs, setLiveAiPyqs] = useState(chapter.pyqs.filter((p) => p.isAiGenerated));
+  const aiPyqs = liveAiPyqs;
+
+  // Background silent polling for AI Questions
+  React.useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (generatingPYQs) {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/mock-gen/check-pyqs?chapterId=${chapter.id}`);
+          const data = await res.json();
+          if (data.success && data.pyqs && data.pyqs.length > liveAiPyqs.length) {
+            // New questions arrived from Azure!
+            setLiveAiPyqs(data.pyqs);
+            setGeneratingPYQs(false);
+            setGenStatus('Questions generated successfully!');
+            setGenProgress(100);
+          }
+        } catch (e) {
+          console.error('Polling error:', e);
+        }
+      }, 10000); // 10 second poll
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [generatingPYQs, chapter.id, liveAiPyqs.length]);
 
   const handleGenerateQuestions = async () => {
     setGeneratingPYQs(true);
-    setGenStatus('Starting generation...');
+    setGenStatus('Starting background generation...');
     setGenProgress(10);
     setError(null);
     try {
-      setGenStatus('Processing chapter content...');
+      setGenStatus('Queueing task for Azure worker...');
       setGenProgress(30);
-      
-      setGenStatus('Generating questions using NVIDIA 120B...');
-      setGenProgress(60);
       
       const res = await fetch('/api/mock-gen/generate-chapter-pyqs', {
         method: 'POST',
@@ -161,16 +186,12 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
         throw new Error(data.error || 'Failed to start practice question generation');
       }
 
-      setGenProgress(100);
-      setGenStatus('Task sent to Azure! Please check back in 2-3 minutes.');
+      setGenProgress(80);
+      setGenStatus('Task sent to Azure! Waiting for questions to appear magically... (Usually takes 45-60s)');
       
-      // Don't reload immediately, as it takes Azure a few minutes to finish
-      setTimeout(() => {
-        setGeneratingPYQs(false);
-      }, 5000);
-      
+      // We DO NOT setGeneratingPYQs(false) here! The polling useEffect will do it when questions arrive.
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error generating practice questions';
+      const msg = err instanceof Error ? err.message : 'Error calling Mock Gen Route';
       setError(msg);
       setGeneratingPYQs(false);
     }
