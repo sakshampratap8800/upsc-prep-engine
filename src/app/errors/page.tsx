@@ -1,7 +1,9 @@
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { FormattedQuestionText } from '@/components/FormattedQuestionText';
 import prisma from '@/lib/db';
 import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default async function ErrorLogPage() {
   let errors: Array<{
@@ -10,7 +12,7 @@ export default async function ErrorLogPage() {
     description: string | null;
     createdAt: Date;
     answerAttempt: {
-      pyq: { year: number; examStage: string; paper: string; questionText: string } | null;
+      pyq: { id: number; year: number; examStage: string; paper: string; questionText: string; contentJson?: string | null } | null;
     };
   }> = [];
 
@@ -62,9 +64,16 @@ export default async function ErrorLogPage() {
                 <p className="mt-2 text-sm text-stone-700 dark:text-stone-200">{err.description}</p>
               )}
               {err.answerAttempt?.pyq && (
-                <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-                  {err.answerAttempt.pyq.examStage} {err.answerAttempt.pyq.year} &bull; {err.answerAttempt.pyq.paper}
-                </p>
+                <div className="mt-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                    {err.answerAttempt.pyq.examStage} {err.answerAttempt.pyq.year} &bull; {err.answerAttempt.pyq.paper}
+                  </p>
+                  <Link href={`/pyq/${err.answerAttempt.pyq.id}`} className="block group">
+                    <div className="text-sm text-stone-800 dark:text-stone-300 line-clamp-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      <FormattedQuestionText text={err.answerAttempt.pyq.questionText} contentJson={err.answerAttempt.pyq.contentJson} />
+                    </div>
+                  </Link>
+                </div>
               )}
             </div>
           ))}
