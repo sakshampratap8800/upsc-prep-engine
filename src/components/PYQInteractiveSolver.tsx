@@ -367,7 +367,9 @@ export function PYQInteractiveSolver({ pyq: initialPyq }: PYQInteractiveSolverPr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          attemptId: result.attemptId || pyq.id,
+          attemptId: result.attemptId,
+          pyqId: pyq.id,
+          userAnswer: selectedOption || textAnswer || 'unknown',
           errorType: selectedErrorType,
           description: `Mistake on ${pyq.examStage} ${pyq.year} ${pyq.paper} Q.${pyq.questionNumber || pyq.id}`,
         }),
