@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useEditMode } from '@/context/EditModeContext';
-import { Map, Upload, X, PenTool, Eraser, Loader2, Save, RotateCcw } from 'lucide-react';
+import { Map, Upload, X, PenTool, Eraser, Loader2, Save, RotateCcw, Maximize } from 'lucide-react';
 
 interface MapImage {
   url: string;
@@ -18,6 +18,7 @@ interface Props {
 const ScratchPadImage = ({ image }: { image: MapImage }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [mode, setMode] = useState<'pen' | 'eraser' | 'view'>('view');
+  const [isExpanded, setIsExpanded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -129,12 +130,47 @@ const ScratchPadImage = ({ image }: { image: MapImage }) => {
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition"
+            title="Expand Image"
+          >
+            <Maximize className="w-4 h-4" />
+          </button>
         </div>
       </div>
       
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-2 sm:p-4" 
+          onClick={() => setIsExpanded(false)}
+        >
+          <button 
+            className="absolute top-4 right-4 z-50 text-white/70 hover:text-white p-2 hover:bg-white/10 rounded-full transition"
+            onClick={() => setIsExpanded(false)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="w-full h-full overflow-auto flex items-center justify-center">
+            <img 
+              src={image.url} 
+              alt={image.title} 
+              className="max-w-[150vw] max-h-[150vh] sm:max-w-none sm:max-h-none object-contain cursor-zoom-out" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div 
         ref={containerRef} 
-        className="relative w-full rounded-xl border border-stone-200 dark:border-stone-800 overflow-hidden bg-white dark:bg-stone-900 shadow-sm"
+        className={`relative w-full rounded-xl border border-stone-200 dark:border-stone-800 overflow-hidden bg-white dark:bg-stone-900 shadow-sm ${mode === 'view' ? 'cursor-zoom-in' : ''}`}
+        onClick={() => {
+          if (mode === 'view') setIsExpanded(true);
+        }}
       >
         <img 
           src={image.url} 
