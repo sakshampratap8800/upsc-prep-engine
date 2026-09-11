@@ -15,7 +15,9 @@ export async function GET(req: Request) {
       select: { summary: true, keyConceptsJson: true, definitionsJson: true }
     });
     
-    if (!chapter || !chapter.summary) return NextResponse.json({ status: 'pending' });
+    if (!chapter || !chapter.summary || !chapter.summary.trim().startsWith('{')) {
+      return NextResponse.json({ status: 'pending' });
+    }
     
     return NextResponse.json({ 
       status: 'completed', 

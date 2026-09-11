@@ -177,7 +177,7 @@ JSON SCHEMA:
         genRes = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${nvidiaKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: modelName, messages: [{ role: 'user', content: genPrompt }], temperature: 0.3, max_tokens: 3500 })
+            body: JSON.stringify({ model: modelName, messages: [{ role: 'user', content: genPrompt }], temperature: 0.3, max_tokens: 4000 })
         });
     }
     catch (e) {
@@ -191,9 +191,18 @@ JSON SCHEMA:
     try {
         const start = genContent.indexOf('[');
         const end = genContent.lastIndexOf(']');
-        if (start === -1 || end === -1 || end <= start)
+        let jsonStr = '';
+        if (start !== -1 && end !== -1 && end > start) {
+            jsonStr = genContent.substring(start, end + 1);
+        }
+        else if (start !== -1) {
+            // Heavily truncated
+            jsonStr = genContent.substring(start) + '\n}]';
+        }
+        else {
             throw new Error('No JSON array found in NVIDIA response');
-        candidates = JSON.parse(genContent.substring(start, end + 1));
+        }
+        candidates = JSON.parse(jsonStr);
         if (!Array.isArray(candidates) || candidates.length === 0)
             throw new Error('Parsed JSON is not a valid array of questions');
     }
@@ -202,12 +211,17 @@ JSON SCHEMA:
         const regex = /{"questionText"[\s\S]*?}/g;
         const matches = genContent.match(regex);
         if (matches && matches.length > 0) {
-            candidates = matches.map(m => {
+            candidates = matches.map((m) => {
                 try {
-                    return JSON.parse(m);
+                    return JSON.parse(m + '}');
                 }
-                catch (e) {
-                    return null;
+                catch (err1) {
+                    try {
+                        return JSON.parse(m);
+                    }
+                    catch (err2) {
+                        return null;
+                    }
                 }
             }).filter(Boolean);
         }
@@ -239,17 +253,34 @@ RETURN STRICTLY JSON MATCHING:
     const valContent = valJson.choices?.[0]?.message?.content;
     let finalQuestions = [];
     try {
-        const start = valContent.indexOf('[');
-        const end = valContent.lastIndexOf(']');
-        if (start === -1 || end === -1 || end <= start)
-            throw new Error();
-        finalQuestions = JSON.parse(valContent.substring(start, end + 1));
+        const jsonMatch = valContent.match(/\[[\s\S]*\]/);
+        let jsonStr = '';
+        if (jsonMatch) {
+            jsonStr = jsonMatch[0];
+        }
+        else {
+            const rawText = valContent;
+            // Try to find first '[' and last ']'
+            const startIdx = rawText.indexOf('[');
+            const endIdx = rawText.lastIndexOf(']');
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                jsonStr = rawText.substring(startIdx, endIdx + 1);
+            }
+            else if (startIdx !== -1) {
+                // Highly truncated array
+                jsonStr = rawText.substring(startIdx) + '\n}]';
+            }
+            else {
+                throw new Error("Failed to find JSON array in NVIDIA response.");
+            }
+        }
+        finalQuestions = JSON.parse(jsonStr);
     }
     catch (e) {
         const regex = /{"questionText"[\s\S]*?}/g;
         const matches = valContent.match(regex);
         if (matches && matches.length > 0) {
-            finalQuestions = matches.map(m => {
+            finalQuestions = matches.map((m) => {
                 try {
                     return JSON.parse(m);
                 }
