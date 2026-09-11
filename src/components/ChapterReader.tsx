@@ -280,17 +280,17 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
             {analyzing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
-                Analyzing (Gemini 3.8 Flash)...
+                Analyzing (Gemini 1.5 Flash)...
               </>
             ) : hasSavedNotes ? (
               <>
                 <RotateCcw className="h-3.5 w-3.5 text-stone-300 dark:text-stone-600" />
-                Re-Analyze with Gemini 3.8 Flash
+                Re-Analyze with Gemini 1.5 Flash
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4 text-amber-300 dark:text-amber-500" />
-                Analyze with Gemini 3.8 Flash
+                Analyze with Gemini 1.5 Flash
               </>
             )}
           </button>

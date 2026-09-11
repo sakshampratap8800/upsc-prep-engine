@@ -59,7 +59,7 @@ Return ONLY valid JSON matching this schema:
 - Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
     let parsedData = null;
     let modelUsed = '';
-    const geminiModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+    const geminiModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'];
     // Distribute Gemini load: Even chapters use Key 1, Odd chapters use Key 2
     const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
     const key2 = process.env.GEMINI_API_KEY_2 || key1;
