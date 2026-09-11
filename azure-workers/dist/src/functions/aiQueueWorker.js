@@ -59,7 +59,7 @@ Return ONLY valid JSON matching this schema:
 - Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
     let parsedData = null;
     let modelUsed = '';
-    const geminiModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'];
+    const geminiModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
     // Distribute Gemini load: Even chapters use Key 1, Odd chapters use Key 2
     const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
     const key2 = process.env.GEMINI_API_KEY_2 || key1;
@@ -79,10 +79,17 @@ Return ONLY valid JSON matching this schema:
                     });
                     const json = await res.json();
                     if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        parsedData = JSON.parse(json.candidates[0].content.parts[0].text);
-                        modelUsed = modelName;
-                        success = true;
-                        break;
+                        let text = json.candidates[0].content.parts[0].text;
+                        text = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+                        try {
+                            parsedData = JSON.parse(text);
+                            modelUsed = modelName;
+                            success = true;
+                            break;
+                        }
+                        catch (parseErr) {
+                            context.log('Gemini JSON Parse Error:', parseErr, 'Raw Text:', text.substring(0, 50));
+                        }
                     }
                     if (res.status === 503)
                         await new Promise(r => setTimeout(r, 1200));
