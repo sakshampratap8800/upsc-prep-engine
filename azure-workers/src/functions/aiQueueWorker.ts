@@ -204,7 +204,7 @@ JSON SCHEMA:
         const regex = /{"questionText"[\s\S]*?}/g;
         const matches = genContent.match(regex);
         if (matches && matches.length > 0) {
-            candidates = matches.map(m => {
+            candidates = matches.map((m: string) => {
                 try { return JSON.parse(m); } catch (e) { return null; }
             }).filter(Boolean);
         }
@@ -243,7 +243,7 @@ RETURN STRICTLY JSON MATCHING:
         const regex = /{"questionText"[\s\S]*?}/g;
         const matches = valContent.match(regex);
         if (matches && matches.length > 0) {
-            finalQuestions = matches.map(m => {
+            finalQuestions = matches.map((m: string) => {
                 try { return JSON.parse(m); } catch (e) { return null; }
             }).filter(Boolean);
         }

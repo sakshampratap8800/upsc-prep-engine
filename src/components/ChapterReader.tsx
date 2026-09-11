@@ -113,19 +113,16 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   const handleAnalyze = async () => {
     setAnalyzing(true);
     setError(null);
-    setStatus('Initiating analysis...');
-    setProgress(20);
     try {
       const res = await fetch('/api/analyze-chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chapterId: chapter.id }),
       });
-
-      if (data.data.prelimsFocus) setKeyConcepts(data.data.prelimsFocus);
-      if (data.data.keyDefinitions) setDefinitions(data.data.keyDefinitions);
+      if (!res.ok) throw new Error('Failed to start analysis task');
+      alert('Task sent to Azure! Please wait a few minutes and refresh the page.');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error calling Gemini AI';
+      const msg = err instanceof Error ? err.message : 'Error calling Azure Worker';
       setError(msg);
     } finally {
       setAnalyzing(false);
