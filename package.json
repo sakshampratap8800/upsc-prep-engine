@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",
+    "@azure/storage-queue": "^12.31.0",
     "@google/generative-ai": "^0.24.1",
     "@libsql/client": "^0.8.0",
     "@prisma/adapter-libsql": "^5.22.0",

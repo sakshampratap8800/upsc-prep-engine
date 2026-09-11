@@ -1,0 +1,1 @@
+const { aiQueueWorker } = require('./dist/src/functions/aiQueueWorker.js'); const dummyContext = { log: (...args) => console.log('[LOG]', ...args) }; aiQueueWorker({ chapterId: 134, task: 'generate_pyqs' }, dummyContext).then(() => console.log('SUCCESS')).catch(e => console.error('FAILED:', e));

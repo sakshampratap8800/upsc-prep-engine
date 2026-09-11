@@ -113,25 +113,13 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
   const handleAnalyze = async () => {
     setAnalyzing(true);
     setError(null);
+    setStatus('Initiating analysis...');
+    setProgress(20);
     try {
       const res = await fetch('/api/analyze-chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chapterId: chapter.id }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to analyze chapter');
-      }
-
-      setAiData({
-        highYieldSummary: data.data.highYieldSummary || [],
-        mainsAngles: data.data.mainsAngles || [],
-        caseStudiesAndData: data.data.caseStudiesAndData || [],
-        mapWork: data.data.mapWork || [],
-        diagramsToDraw: data.data.diagramsToDraw || [],
-        relevance: data.data.relevance || 'GS / Prelims',
-        modelUsed: data.data.modelUsed || 'Gemini 3.8 Flash'
       });
 
       if (data.data.prelimsFocus) setKeyConcepts(data.data.prelimsFocus);
@@ -171,19 +159,19 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
         body: JSON.stringify({ chapterId: chapter.id }),
       });
       
-      setGenStatus('Validating and saving questions...');
-      setGenProgress(90);
-      
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error || 'Failed to generate practice questions');
+        throw new Error(data.error || 'Failed to start practice question generation');
       }
 
       setGenProgress(100);
-      setGenStatus('Completed!');
+      setGenStatus('Task sent to Azure! Please check back in 2-3 minutes.');
       
-      // Reload the page to fetch the newly created questions
-      window.location.reload();
+      // Don't reload immediately, as it takes Azure a few minutes to finish
+      setTimeout(() => {
+        setGeneratingPYQs(false);
+      }, 5000);
+      
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error generating practice questions';
       setError(msg);
