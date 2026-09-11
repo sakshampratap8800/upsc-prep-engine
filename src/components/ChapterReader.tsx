@@ -110,9 +110,47 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
 
   const findOutQuestions = safeJSONParse<string[]>(chapter.findOutQuestionsJson, []);
 
+  const [analyzingStatus, setAnalyzingStatus] = useState('');
+  const [analyzingProgress, setAnalyzingProgress] = useState(0);
+
+  // Background silent polling for Chapter Analysis
+  React.useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (analyzing) {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/analyze-check?chapterId=${chapter.id}`);
+          const data = await res.json();
+          if (data.status === 'completed') {
+            // Data arrived from Azure!
+            if (data.summary && data.summary.startsWith('{')) {
+              try { setAiData(JSON.parse(data.summary)); } catch {}
+            }
+            if (data.keyConceptsJson) {
+              setKeyConcepts(safeJSONParse<string[]>(data.keyConceptsJson, []));
+            }
+            if (data.definitionsJson) {
+              setDefinitions(safeJSONParse<Array<{ term: string; definition: string }>>(data.definitionsJson, []));
+            }
+            setAnalyzing(false);
+          }
+        } catch (e) {
+          console.error('Polling analyze error:', e);
+        }
+      }, 10000); // 10 second poll
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [analyzing, chapter.id]);
+
   const handleAnalyze = async () => {
     setAnalyzing(true);
     setError(null);
+    setAnalyzingStatus('Sending task to Azure...');
+    setAnalyzingProgress(30);
     try {
       const res = await fetch('/api/analyze-chapter', {
         method: 'POST',
@@ -120,11 +158,14 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
         body: JSON.stringify({ chapterId: chapter.id }),
       });
       if (!res.ok) throw new Error('Failed to start analysis task');
-      alert('Task sent to Azure! Please wait a few minutes and refresh the page.');
+      
+      setAnalyzingStatus('Azure is analyzing chapter with Gemini... (usually takes 1-2 mins)');
+      setAnalyzingProgress(80);
+      
+      // DO NOT setAnalyzing(false) here. Let the polling hook turn it off!
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error calling Azure Worker';
       setError(msg);
-    } finally {
       setAnalyzing(false);
     }
   };
@@ -266,6 +307,21 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
           </a>
         </div>
       </div>
+
+      {analyzing && (
+        <div className="mb-6 p-4 rounded-xl bg-white dark:bg-stone-900 border border-amber-100 dark:border-amber-900/40 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
+            <span>{analyzingStatus}</span>
+            <span>{analyzingProgress}%</span>
+          </div>
+          <div className="h-2 w-full bg-amber-50 dark:bg-amber-950/30 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-amber-500 transition-all duration-500 ease-out"
+              style={{ width: `${analyzingProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 p-4 text-xs text-red-700 dark:text-red-300">
