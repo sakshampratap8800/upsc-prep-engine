@@ -37,6 +37,26 @@ export default async function ErrorLogPage() {
     weak_understanding: 'Weak Understanding',
   };
 
+  const groupedErrors: Record<string, typeof errors[0] & { count: number }> = {};
+  const orphanedErrors: (typeof errors[0] & { count: number })[] = [];
+
+  for (const err of errors) {
+    const pyqId = err.answerAttempt?.pyq?.id;
+    if (pyqId) {
+      if (!groupedErrors[pyqId]) {
+        groupedErrors[pyqId] = { ...err, count: 1 };
+      } else {
+        groupedErrors[pyqId].count += 1;
+      }
+    } else {
+      orphanedErrors.push({ ...err, count: 1 });
+    }
+  }
+
+  const finalErrors = [...Object.values(groupedErrors), ...orphanedErrors].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
+
   return (
     <div>
       <PageHeader
@@ -44,7 +64,7 @@ export default async function ErrorLogPage() {
         description="Track and analyze your mistakes to improve performance"
       />
 
-      {errors.length === 0 ? (
+      {finalErrors.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title="No errors logged yet"
@@ -52,12 +72,19 @@ export default async function ErrorLogPage() {
         />
       ) : (
         <div className="space-y-3">
-          {errors.map((err) => (
+          {finalErrors.map((err) => (
             <div key={err.id} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4 shadow-xs transition-colors">
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300">
-                  {errorTypeLabels[err.errorType] || err.errorType}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300">
+                    {errorTypeLabels[err.errorType] || err.errorType}
+                  </span>
+                  {err.count > 1 && (
+                    <span className="rounded-md bg-stone-100 dark:bg-stone-800 px-2 py-0.5 text-[10px] font-bold text-stone-600 dark:text-stone-400">
+                      Mistaken {err.count}x
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs text-stone-500 dark:text-stone-400">{new Date(err.createdAt).toLocaleDateString()}</span>
               </div>
               {err.description && (
