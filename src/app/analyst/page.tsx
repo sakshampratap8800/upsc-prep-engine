@@ -48,28 +48,31 @@ export default function AnalystPage() {
   };
 
   return (
-    <div className="flex h-full">
-      (* Sidebar List *)
-      <div className="w-72 border-r border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 flex flex-col">
+    <div 
+      className="flex flex-col md:flex-row bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden" 
+      style={{ height: 'calc(100vh - 120px)', minHeight: '600px' }}
+    >
+      {/* Sidebar List */}
+      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-800 flex flex-col shrink-0">
         <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-stone-900 dark:text-white">The Analyst</h1>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">The Analyst</h1>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 rounded-md hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition"
+            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition-colors"
             title="Fetch Latest PDF from YouTube"
           >
-            <RefreshCw className={`h~4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
           {loading ? (
-            <div className="p-4 flex justify-center">
+            <div className="py-8 flex justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
             </div>
           ) : pdfs.length === 0 ? (
-            <div className="p-4 text-center text-sm text-stone-500">
+            <div className="py-8 text-center text-sm text-stone-500">
               No PDFs found. Click refresh to fetch.
             </div>
           ) : pdfs.map((pdf) => {
@@ -78,25 +81,24 @@ export default function AnalystPage() {
               <button
                 key={pdf.id}
                 onClick={() => setSelectedPdf(pdf)}
-                className={`w-full text-left p-3 rounded-md transition-colors flex items-center gap-3 ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${
                   isSelected
-                    ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900'
-                    : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-semibold'
+                    : 'hover:bg-stone-50 dark:hover:bg-stone-800/50 text-stone-700 dark:text-stone-300 font-medium'
                 }`}
               >
-                <FileText className="h-4 w-4 opacity-70" />
-                <div className="truncate">
-                  <div className="text-sm font-medium">{formatDate(pdf.date)}</div>
-                  <div className="text-[10xp] opacity-70 truncate">{pdf.title}</div>
-                </div>
+                <FileText className={`h-4 w-4 shrink-0 ${isSelected ? 'text-blue-500' : 'opacity-50'}`} />
+                <span className="text-sm truncate">
+                  {formatDate(pdf.date)}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      (* Main Content *)
-      <div className="flex-1 bg-stone-50 dark:bg-stone-950">
+      {/* Main Content Viewer */}
+      <div className="flex-1 bg-stone-100 dark:bg-stone-950 flex flex-col">
         {selectedPdf ? (
           <iframe
             src={selectedPdf.pdfUrl}
@@ -104,7 +106,7 @@ export default function AnalystPage() {
             title={selectedPdf.title}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-stone-500">
+          <div className="flex h-full items-center justify-center text-stone-500 text-sm">
             Select a date to view the PDF.
           </div>
         )}
