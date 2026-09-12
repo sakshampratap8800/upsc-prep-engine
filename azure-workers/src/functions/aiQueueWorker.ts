@@ -28,7 +28,7 @@ export async function aiQueueWorker(queueItem: any, context: InvocationContext):
         }
     } catch (err) {
         context.log('Error processing task:', err);
-        throw err; // Trigger Azure Queue's automatic retry
+        throw err; // Rethrow to ensure Azure moves it to poison queue
     }
 }
 
