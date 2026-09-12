@@ -16,6 +16,7 @@ import {
   Database,
   Activity,
   ChevronLeft,
+  Newspaper,
   type LucideIcon,
 } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { label: 'Error Log', href: '/errors', icon: AlertCircle },
   { label: 'Search', href: '/search', icon: Search },
   { label: 'Data Health', href: '/data-health', icon: Activity },
+  { label: 'The Analyst', href: '/analyst', icon: Newspaper },
 ];
 
 export function Sidebar() {

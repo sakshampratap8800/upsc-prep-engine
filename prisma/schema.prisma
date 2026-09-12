@@ -302,3 +302,16 @@ model ImportLog {
   @@index([status])
   @@map("import_logs")
 }
+
+model AnalystPdf {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique
+  title     String
+  videoId   String   @unique
+  pdfUrl    String
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@map("analyst_pdfs")
+}
+
