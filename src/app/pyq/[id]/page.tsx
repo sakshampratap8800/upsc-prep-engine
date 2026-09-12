@@ -87,6 +87,7 @@ export default async function PYQDetailPage({ params }: Props) {
     <div className="flex items-center gap-2">
       {prevPyq ? (
         <Link
+          prefetch={true}
           href={`/pyq/${prevPyq.id}`}
           className="inline-flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 shadow-2xs hover:bg-stone-100 dark:hover:bg-stone-800 transition"
         >
@@ -105,6 +106,7 @@ export default async function PYQDetailPage({ params }: Props) {
 
       {nextPyq ? (
         <Link
+          prefetch={true}
           href={`/pyq/${nextPyq.id}`}
           className="inline-flex items-center gap-1 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-bold text-stone-700 dark:text-stone-200 shadow-2xs hover:bg-stone-100 dark:hover:bg-stone-800 transition"
         >

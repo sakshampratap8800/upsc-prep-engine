@@ -161,7 +161,18 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
           return acc;
         }, [])
         .sort((a, b) => b.year - a.year)
-    : yearStats;
+    : yearStagePaperStats
+        .filter((p) => !p.examStage.startsWith('EPFO'))
+        .reduce<{ year: number; _count: { id: number } }[]>((acc, item) => {
+          const existing = acc.find((a) => a.year === item.year);
+          if (existing) {
+            existing._count.id += item._count.id;
+          } else {
+            acc.push({ year: item.year, _count: { id: item._count.id } });
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => b.year - a.year);
 
   return (
     <div>
@@ -311,7 +322,10 @@ export default async function PYQBrowserPage({ searchParams }: Props) {
                 {displayYearStats.map((y) => {
                   const isOpen = openYear === y.year;
                   const papersByStage = yearStagePaperStats
-                    .filter((p) => p.year === y.year)
+                    .filter((p) => 
+                      p.year === y.year && 
+                      (stage.startsWith('EPFO') ? p.examStage.startsWith('EPFO') : !p.examStage.startsWith('EPFO'))
+                    )
                     .reduce<Record<string, typeof yearStagePaperStats>>((acc, item) => {
                       if (!acc[item.examStage]) acc[item.examStage] = [];
                       acc[item.examStage].push(item);
