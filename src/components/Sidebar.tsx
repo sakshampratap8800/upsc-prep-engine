@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
   { label: 'Study APFC', href: '/study/apfc', icon: Award },
   { label: 'Library', href: '/library', icon: BookOpen },
   { label: 'PYQ Browser', href: '/pyq', icon: FileQuestion },
+  { label: 'The Analyst', href: '/analyst', icon: Newspaper },
   { label: 'Syllabus', href: '/syllabus', icon: GraduationCap },
   { label: 'Timetable', href: '/timetable', icon: Calendar },
   { label: 'Revision', href: '/revision', icon: RotateCcw },
@@ -39,7 +40,6 @@ const navItems: NavItem[] = [
   { label: 'Error Log', href: '/errors', icon: AlertCircle },
   { label: 'Search', href: '/search', icon: Search },
   { label: 'Data Health', href: '/data-health', icon: Activity },
-  { label: 'The Analyst', href: '/analyst', icon: Newspaper },
 ];
 
 export function Sidebar() {
