@@ -1,6 +1,6 @@
 'use client';
 
-import { effect, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDate } from '@/lib/utils';
 import { Loader2, RefreshCw, FileText } from 'lucide-react';
 
