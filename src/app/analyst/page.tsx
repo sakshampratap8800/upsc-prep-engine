@@ -49,79 +49,80 @@ export default function AnalystPage() {
 
   return (
     <div 
-      className="flex flex-col md:flex-row bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden" 
+      className="flex flex-col bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm overflow-hidden w-full" 
       style={{ height: 'calc(100vh - 120px)', minHeight: '600px' }}
     >
-      {/* Sidebar List */}
-      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-800 flex flex-col shrink-0">
-        <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-stone-900 dark:text-white">The Analyst</h1>
+      {/* Top Navigation Bar */}
+      <div className="flex items-center justify-between p-3.5 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shrink-0">
+        <div className="flex items-center gap-3">
+          <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-base font-bold text-stone-900 dark:text-white tracking-tight">
+            The Analyst
+          </h1>
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-stone-400 ml-2" />}
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition-colors"
             title="Fetch Latest PDF from YouTube"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-          {loading ? (
-            <div className="py-8 flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
-            </div>
-          ) : pdfs.length === 0 ? (
-            <div className="py-8 text-center text-sm text-stone-500">
-              No PDFs found. Click refresh to fetch.
-            </div>
-          ) : pdfs.map((pdf) => {
-            const isSelected = selectedPdf?.id === pdf.id;
-            return (
-              <button
-                key={pdf.id}
-                onClick={() => setSelectedPdf(pdf)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${
-                  isSelected
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-semibold'
-                    : 'hover:bg-stone-50 dark:hover:bg-stone-800/50 text-stone-700 dark:text-stone-300 font-medium'
-                }`}
-              >
-                <FileText className={`h-4 w-4 shrink-0 ${isSelected ? 'text-blue-500' : 'opacity-50'}`} />
-                <span className="text-sm truncate">
+          
+          {pdfs.length > 0 && (
+            <select
+              value={selectedPdf?.id || ''}
+              onChange={(e) => {
+                const pdf = pdfs.find(p => p.id === parseInt(e.target.value));
+                if (pdf) setSelectedPdf(pdf);
+              }}
+              className="bg-stone-100 dark:bg-stone-800 border-none rounded-lg px-3 py-1.5 text-sm font-medium text-stone-800 dark:text-stone-200 cursor-pointer focus:ring-2 focus:ring-blue-500/50 appearance-none min-w-[140px]"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.5rem center',
+                backgroundSize: '1em 1em',
+                paddingRight: '2rem'
+              }}
+            >
+              {pdfs.map((pdf) => (
+                <option key={pdf.id} value={pdf.id}>
                   {formatDate(pdf.date)}
-                </span>
-              </button>
-            );
-          })}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {selectedPdf && (
+            <a
+              href={selectedPdf.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 transition-colors"
+              title="Pop-out Tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
         </div>
       </div>
 
       {/* Main Content Viewer */}
-      <div className="flex-1 bg-stone-100 dark:bg-stone-950 flex flex-col relative">
+      <div className="flex-1 bg-stone-100 dark:bg-stone-950 relative">
         {selectedPdf ? (
-          <>
-            <div className="absolute top-0 right-0 z-10 p-2 opacity-50 hover:opacity-100 transition-opacity">
-              <a
-                href={selectedPdf.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-stone-800/80 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-stone-900 transition"
-                title="Open Native PDF"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Pop-out Tab
-              </a>
-            </div>
-            <iframe
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf.pdfUrl)}&embedded=true`}
-              className="absolute inset-0 w-full h-full border-none bg-stone-100 dark:bg-stone-950"
-              title={selectedPdf.title}
-            />
-          </>
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf.pdfUrl)}&embedded=true`}
+            className="absolute inset-0 w-full h-full border-none"
+            title={selectedPdf.title}
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-stone-500 text-sm">
-            Select a date to view the PDF.
+            {pdfs.length === 0 && !loading 
+              ? "No PDFs found. Click the refresh button to fetch." 
+              : "Select a date to view the PDF."}
           </div>
         )}
       </div>
