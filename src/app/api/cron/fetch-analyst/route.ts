@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@olib/db';
+import prisma from '@/lib/db';
 
 const API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyACQn9rA-5a4FNkwMEuPDEDxCfyrkDPe_o";
 const PLAYLIST_ID = "PLQG-bVtyB9_ZvNhsoKlwHA1My0piHhlyf";
