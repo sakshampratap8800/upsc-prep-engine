@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fetch-analyst",
+      "schedule": "0 14 * * *"
+    }
+  ]
+}
