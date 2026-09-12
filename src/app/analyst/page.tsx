@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { formatDate } from '@/lib/utils';
-import { Loader2, RefreshCw, FileText } from 'lucide-react';
+import { Loader2, RefreshCw, FileText, ExternalLink } from 'lucide-react';
 
 type AnalystPdf = {
   id: number;
@@ -98,13 +98,27 @@ export default function AnalystPage() {
       </div>
 
       {/* Main Content Viewer */}
-      <div className="flex-1 bg-stone-100 dark:bg-stone-950 flex flex-col">
+      <div className="flex-1 bg-stone-100 dark:bg-stone-950 flex flex-col relative">
         {selectedPdf ? (
-          <iframe
-            src={selectedPdf.pdfUrl}
-            className="w-full h-full border-none"
-            title={selectedPdf.title}
-          />
+          <>
+            <div className="absolute top-0 right-0 z-10 p-2 opacity-50 hover:opacity-100 transition-opacity">
+              <a
+                href={selectedPdf.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-stone-800/80 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-stone-900 transition"
+                title="Open Native PDF"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Pop-out Tab
+              </a>
+            </div>
+            <iframe
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf.pdfUrl)}&embedded=true`}
+              className="absolute inset-0 w-full h-full border-none bg-stone-100 dark:bg-stone-950"
+              title={selectedPdf.title}
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-stone-500 text-sm">
             Select a date to view the PDF.
