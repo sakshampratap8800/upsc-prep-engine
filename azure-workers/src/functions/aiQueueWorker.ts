@@ -46,7 +46,8 @@ async function handleAnalyzeChapter(db: any, chapterId: number, context: Invocat
     if (rs.rows.length === 0) throw new Error('Chapter not found');
     const chapter = rs.rows[0];
 
-    const systemPrompt = `You are an expert UPSC CSE (Civil Services Exam) faculty...
+    const systemPrompt = `You are an expert UPSC CSE (Civil Services Exam) faculty.
+CRITICAL DATA INSTRUCTION: NCERT books often contain outdated data (e.g., 2011 census). When extracting data or statistics, you MUST validate them using your internal knowledge. If newer, current data is available (e.g., latest Census, recent Economic Survey), provide the CURRENT data and explicitly state that it updates the older NCERT data. If no new data is available, return the original book data.
 Extract: 1. Core arguments 2. NCERT data traps 3. Mains enrichment 4. Map Work 5. Diagrams
 Return ONLY valid JSON matching this schema:
 {
