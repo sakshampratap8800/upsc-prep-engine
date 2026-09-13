@@ -32,16 +32,18 @@ async function aiQueueWorker(queueItem, context) {
 }
 async function handleAnalyzeChapter(db, chapterId, context) {
     context.log(`Running Analyze Chapter for ID ${chapterId}`);
-    const rs = await db.execute({
-        sql: `SELECT c.content, c.summary, b.title as bookTitle, b.className, s.name as subjectName, c.number, c.title as chapterTitle
+    try {
+        await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'processing', analyzeError = NULL WHERE id = ?`, args: [chapterId] });
+        const rs = await db.execute({
+            sql: `SELECT c.content, c.summary, b.title as bookTitle, b.className, s.name as subjectName, c.number, c.title as chapterTitle
               FROM chapters c JOIN books b ON c.bookId = b.id JOIN subjects s ON b.subjectId = s.id 
               WHERE c.id = ?`,
-        args: [chapterId]
-    });
-    if (rs.rows.length === 0)
-        throw new Error('Chapter not found');
-    const chapter = rs.rows[0];
-    const systemPrompt = `You are an expert UPSC CSE (Civil Services Exam) faculty...
+            args: [chapterId]
+        });
+        if (rs.rows.length === 0)
+            throw new Error('Chapter not found');
+        const chapter = rs.rows[0];
+        const systemPrompt = `You are an expert UPSC CSE (Civil Services Exam) faculty...
 Extract: 1. Core arguments 2. NCERT data traps 3. Mains enrichment 4. Map Work 5. Diagrams
 Return ONLY valid JSON matching this schema:
 {
@@ -54,91 +56,104 @@ Return ONLY valid JSON matching this schema:
   "mapWork": ["string"],
   "diagramsToDraw": ["string"]
 }`;
-    const userPrompt = `Analyze this NCERT chapter in full depth for UPSC CSE 2027:
+        const userPrompt = `Analyze this NCERT chapter in full depth for UPSC CSE 2027:
 - Subject: ${chapter.subjectName} | Book: ${chapter.bookTitle} (Class ${chapter.className}) | Chapter ${chapter.number}: ${chapter.chapterTitle}
 - Complete Chapter Content: ${chapter.content || chapter.summary || ''}`;
-    let parsedData = null;
-    let modelUsed = '';
-    const geminiModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
-    // Distribute Gemini load: Even chapters use Key 1, Odd chapters use Key 2
-    const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
-    const key2 = process.env.GEMINI_API_KEY_2 || key1;
-    const geminiApiKey = (chapterId % 2 === 0) ? key1 : key2;
-    if (geminiApiKey) {
-        for (const modelName of geminiModels) {
-            let success = false;
-            for (let attempt = 1; attempt <= 5; attempt++) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiApiKey },
-                        body: JSON.stringify({
-                            contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-                            generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
-                        })
-                    });
-                    const json = await res.json();
-                    if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        let text = json.candidates[0].content.parts[0].text;
-                        text = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-                        try {
-                            parsedData = JSON.parse(text);
-                            modelUsed = modelName;
-                            success = true;
-                            break;
+        let parsedData = null;
+        let modelUsed = '';
+        const geminiModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+        // Distribute Gemini load: Even chapters use Key 1, Odd chapters use Key 2
+        const key1 = process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY;
+        const key2 = process.env.GEMINI_API_KEY_2 || key1;
+        const geminiApiKey = (chapterId % 2 === 0) ? key1 : key2;
+        if (geminiApiKey) {
+            for (const modelName of geminiModels) {
+                let success = false;
+                for (let attempt = 1; attempt <= 5; attempt++) {
+                    try {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiApiKey },
+                            body: JSON.stringify({
+                                contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+                                generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+                            })
+                        });
+                        const json = await res.json();
+                        if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            let text = json.candidates[0].content.parts[0].text;
+                            text = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+                            try {
+                                parsedData = JSON.parse(text);
+                                modelUsed = modelName;
+                                success = true;
+                                break;
+                            }
+                            catch (parseErr) {
+                                context.log('Gemini JSON Parse Error:', parseErr, 'Raw Text:', text.substring(0, 50));
+                            }
                         }
-                        catch (parseErr) {
-                            context.log('Gemini JSON Parse Error:', parseErr, 'Raw Text:', text.substring(0, 50));
+                        if (res.status === 503 || res.status === 429) {
+                            const backoff = Math.pow(2, attempt) * 1000;
+                            context.log(`Gemini overloaded (${res.status}), retrying in ${backoff}ms...`);
+                            await new Promise(r => setTimeout(r, backoff));
                         }
                     }
-                    if (res.status === 503)
-                        await new Promise(r => setTimeout(r, 1200));
+                    catch (e) {
+                        context.log('Fetch error:', e);
+                    }
                 }
-                catch (e) { }
-            }
-            if (success)
-                break;
-        }
-    }
-    if (!parsedData && process.env.GROQ_API_KEY) {
-        try {
-            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
-                body: JSON.stringify({
-                    model: 'llama-3.1-8b-instant',
-                    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-                    response_format: { type: 'json_object' }, temperature: 0.2
-                })
-            });
-            const groqJson = await groqRes.json();
-            if (groqJson.choices?.[0]?.message?.content) {
-                parsedData = JSON.parse(groqJson.choices[0].message.content);
-                modelUsed = 'Groq LLaMA 3.1 8B';
+                if (success)
+                    break;
             }
         }
-        catch (e) { }
+        if (!parsedData && process.env.GROQ_API_KEY) {
+            try {
+                const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-8b-instant',
+                        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+                        response_format: { type: 'json_object' }, temperature: 0.2
+                    })
+                });
+                const groqJson = await groqRes.json();
+                if (groqJson.choices?.[0]?.message?.content) {
+                    parsedData = JSON.parse(groqJson.choices[0].message.content);
+                    modelUsed = 'Groq LLaMA 3.1 8B';
+                }
+            }
+            catch (e) { }
+        }
+        if (!parsedData)
+            throw new Error('Failed to generate analysis across all AI models.');
+        await db.execute({
+            sql: `UPDATE chapters SET summary = ?, definitionsJson = ?, keyConceptsJson = ? WHERE id = ?`,
+            args: [
+                JSON.stringify({
+                    highYieldSummary: parsedData.highYieldSummary || [],
+                    mainsAngles: parsedData.mainsAngles || [],
+                    caseStudiesAndData: parsedData.caseStudiesAndData || [],
+                    mapWork: parsedData.mapWork || [],
+                    diagramsToDraw: parsedData.diagramsToDraw || [],
+                    relevance: parsedData.relevance || 'GS / Prelims',
+                    modelUsed: modelUsed
+                }),
+                JSON.stringify(parsedData.keyDefinitions || []),
+                JSON.stringify(parsedData.prelimsFocus || []),
+                chapterId
+            ]
+        });
+        await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'completed' WHERE id = ?`, args: [chapterId] });
+        context.log('Saved analyze chapter results.');
     }
-    if (!parsedData)
-        throw new Error('Failed to generate analysis across all AI models.');
-    await db.execute({
-        sql: `UPDATE chapters SET summary = ?, definitionsJson = ?, keyConceptsJson = ? WHERE id = ?`,
-        args: [
-            JSON.stringify({
-                highYieldSummary: parsedData.highYieldSummary || [],
-                mainsAngles: parsedData.mainsAngles || [],
-                caseStudiesAndData: parsedData.caseStudiesAndData || [],
-                mapWork: parsedData.mapWork || [],
-                diagramsToDraw: parsedData.diagramsToDraw || [],
-                relevance: parsedData.relevance || 'GS / Prelims',
-                modelUsed: modelUsed
-            }),
-            JSON.stringify(parsedData.keyDefinitions || []),
-            JSON.stringify(parsedData.prelimsFocus || []),
-            chapterId
-        ]
-    });
-    context.log('Saved analyze chapter results.');
+    catch (err) {
+        const errorMsg = err.message || 'Unknown error during analysis';
+        context.log(`Analyze Chapter failed for ID ${chapterId}: ${errorMsg}`);
+        await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'failed', analyzeError = ? WHERE id = ?`, args: [errorMsg, chapterId] });
+        throw err;
+    }
 }
 async function handleGeneratePYQs(db, chapterId, context) {
     context.log(`Running Generate PYQs for ID ${chapterId}`);

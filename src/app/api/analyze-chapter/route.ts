@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { QueueClient } from '@azure/storage-queue';
+import prisma from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,10 +18,8 @@ export async function POST(req: NextRequest) {
     await queueClient.createIfNotExists();
 
     // Mark as processing immediately in DB
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
     await prisma.chapter.update({
-      where: { id: parseInt(chapterId, 10) },
+      where: { id: parseInt(chapterId.toString(), 10) },
       data: { analyzeStatus: 'processing', analyzeError: null }
     });
 
