@@ -134,6 +134,12 @@ export function ChapterReader({ chapter }: ChapterReaderProps) {
               setDefinitions(safeJSONParse<Array<{ term: string; definition: string }>>(data.definitionsJson, []));
             }
             setAnalyzing(false);
+          } else if (data.status === 'failed') {
+            setError('Azure Worker Error: ' + (data.error || 'Unknown error.'));
+            setAnalyzing(false);
+          } else if (data.status === 'processing') {
+            setAnalyzingStatus('Azure is analyzing chapter with Gemini...');
+            setAnalyzingProgress(80);
           }
         } catch (e) {
           console.error('Polling analyze error:', e);

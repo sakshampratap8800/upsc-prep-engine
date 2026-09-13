@@ -12,11 +12,19 @@ export async function GET(req: Request) {
 
     const chapter = await prisma.chapter.findUnique({
       where: { id: chapterId },
-      select: { summary: true, keyConceptsJson: true, definitionsJson: true }
+      select: { summary: true, keyConceptsJson: true, definitionsJson: true, analyzeStatus: true, analyzeError: true }
     });
     
-    if (!chapter || !chapter.summary || !chapter.summary.trim().startsWith('{')) {
-      return NextResponse.json({ status: 'pending' });
+    if (!chapter) {
+      return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
+    }
+    
+    if (chapter.analyzeStatus === 'failed') {
+      return NextResponse.json({ status: 'failed', error: chapter.analyzeError || 'Analysis failed in background worker.' });
+    }
+    
+    if (chapter.analyzeStatus !== 'completed') {
+      return NextResponse.json({ status: chapter.analyzeStatus || 'pending' });
     }
     
     return NextResponse.json({ 

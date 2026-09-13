@@ -34,6 +34,8 @@ export async function aiQueueWorker(queueItem: any, context: InvocationContext):
 
 async function handleAnalyzeChapter(db: any, chapterId: number, context: InvocationContext) {
     context.log(`Running Analyze Chapter for ID ${chapterId}`);
+    try {
+        await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'processing', analyzeError = NULL WHERE id = ?`, args: [chapterId] });
     
     const rs = await db.execute({
         sql: `SELECT c.content, c.summary, b.title as bookTitle, b.className, s.name as subjectName, c.number, c.title as chapterTitle
@@ -94,8 +96,14 @@ Return ONLY valid JSON matching this schema:
                             context.log('Gemini JSON Parse Error:', parseErr, 'Raw Text:', text.substring(0, 50));
                         }
                     }
-                    if (res.status === 503) await new Promise(r => setTimeout(r, 1200));
-                } catch (e) { }
+                    if (res.status === 503 || res.status === 429) {
+                        const backoff = Math.pow(2, attempt) * 1000;
+                        context.log(`Gemini overloaded (${res.status}), retrying in ${backoff}ms...`);
+                        await new Promise(r => setTimeout(r, backoff));
+                    }
+                } catch (e) {
+                    context.log('Fetch error:', e);
+                }
             }
             if (success) break;
         }
@@ -139,7 +147,14 @@ Return ONLY valid JSON matching this schema:
             chapterId
         ]
     });
-    context.log('Saved analyze chapter results.');
+    await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'completed' WHERE id = ?`, args: [chapterId] });
+        context.log('Saved analyze chapter results.');
+    } catch (err: any) {
+        const errorMsg = err.message || 'Unknown error during analysis';
+        context.log(`Analyze Chapter failed for ID ${chapterId}: ${errorMsg}`);
+        await db.execute({ sql: `UPDATE chapters SET analyzeStatus = 'failed', analyzeError = ? WHERE id = ?`, args: [errorMsg, chapterId] });
+        throw err;
+    }
 }
 
 async function handleGeneratePYQs(db: any, chapterId: number, context: InvocationContext) {

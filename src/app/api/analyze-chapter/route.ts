@@ -16,6 +16,14 @@ export async function POST(req: NextRequest) {
     const queueClient = new QueueClient(connStr, 'ai-tasks-queue');
     await queueClient.createIfNotExists();
 
+    // Mark as processing immediately in DB
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    await prisma.chapter.update({
+      where: { id: parseInt(chapterId, 10) },
+      data: { analyzeStatus: 'processing', analyzeError: null }
+    });
+
     // Azure Queue requires base64 encoded strings
     const payload = JSON.stringify({ chapterId: parseInt(chapterId, 10), task: 'analyze_chapter' });
     const message = Buffer.from(payload).toString('base64');

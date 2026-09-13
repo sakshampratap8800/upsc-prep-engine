@@ -52,6 +52,8 @@ model Chapter {
   definitionsJson      String?
   findOutQuestionsJson String?
   mapImagesJson        String?
+  analyzeStatus        String   @default("idle")
+  analyzeError         String?
   createdAt            DateTime @default(now())
 
   // Relations
